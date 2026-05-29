@@ -1,8 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
@@ -10,4 +5,738 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+// ===================================================================
+// 1. IDENTITY & AUTH
+// ===================================================================
+
+model User {
+  id            Int        @id @default(autoincrement())
+  email         String     @unique
+  password_hash String
+  system_role   SystemRole
+  is_active     Boolean    @default(true)
+  created_at    DateTime   @default(now())
+  updated_at    DateTime   @updatedAt
+
+  dosen_id     Int? @unique
+  pegawai_id   Int? @unique
+  mahasiswa_id Int? @unique
+
+  dosen         Dosen?         @relation(fields: [dosen_id], references: [id])
+  pegawai       Pegawai?       @relation(fields: [pegawai_id], references: [id])
+  mahasiswa     Mahasiswa?     @relation(fields: [mahasiswa_id], references: [id])
+  sessions      Session[]
+  ttd_scan      TtdScan?
+  notifications Notification[]
+  audit_logs    AuditLog[]
+
+  @@map("users")
+}
+
+enum SystemRole {
+  mahasiswa
+  dosen
+  staff_prodi
+  staff_akademik
+  kabag
+  super_admin
+}
+
+model Dosen {
+  id                 Int      @id @default(autoincrement())
+  nidn               String   @unique
+  nama_lengkap       String
+  gelar_depan        String?
+  gelar_belakang     String?
+  jabatan_fungsional String?
+  bidang_keahlian    String?
+  is_active          Boolean  @default(true)
+  created_at         DateTime @default(now())
+  updated_at         DateTime @updatedAt
+
+  user                 User?
+  structural_positions StructuralPosition[]
+  assignments          Assignment[]
+  nilai_sidang_input   NilaiSidang[]
+
+  @@map("dosen")
+}
+
+model Pegawai {
+  id           Int      @id @default(autoincrement())
+  nip          String   @unique
+  nama_lengkap String
+  golongan     String?
+  unit_kerja   String?
+  is_active    Boolean  @default(true)
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  user                 User?
+  structural_positions StructuralPosition[]
+
+  @@map("pegawai")
+}
+
+model Mahasiswa {
+  id               Int             @id @default(autoincrement())
+  nim              String          @unique
+  nama_lengkap     String
+  jenisKelamin     String?
+  tempatLahir      String?
+  tanggalLahir     DateTime?
+  prodi_id         Int
+  angkatan         Int
+  semester_aktif   Int?
+  status_mahasiswa StatusMahasiswa @default(aktif)
+  created_at       DateTime        @default(now())
+  updated_at       DateTime        @updatedAt
+
+  user          User?
+  prodi         Prodi              @relation(fields: [prodi_id], references: [id])
+  pengajuan     PengajuanLayanan[]
+  judul_skripsi JudulSkripsi[]
+  assignments   Assignment[]
+
+  @@map("mahasiswa")
+}
+
+enum StatusMahasiswa {
+  aktif
+  cuti
+  alumni
+  do
+  keluar
+}
+
+// ===================================================================
+// 2. STRUKTUR INSTITUSI
+// ===================================================================
+
+model Fakultas {
+  id         Int      @id @default(autoincrement())
+  kode       String   @unique
+  nama       String
+  is_active  Boolean  @default(true)
+  created_at DateTime @default(now())
+
+  prodi Prodi[]
+
+  @@map("fakultas")
+}
+
+model Prodi {
+  id          Int      @id @default(autoincrement())
+  kode        String   @unique
+  nama        String
+  fakultas_id Int
+  is_active   Boolean  @default(true)
+  created_at  DateTime @default(now())
+
+  fakultas             Fakultas             @relation(fields: [fakultas_id], references: [id])
+  mahasiswa            Mahasiswa[]
+  structural_positions StructuralPosition[]
+
+  @@map("prodi")
+}
+
+model StructuralPosition {
+  id            Int          @id @default(autoincrement())
+  position_code PositionCode
+  is_active     Boolean      @default(true)
+  start_date    DateTime
+  end_date      DateTime?
+  created_at    DateTime     @default(now())
+
+  dosen_id   Int?
+  pegawai_id Int?
+  prodi_id   Int?
+
+  dosen   Dosen?   @relation(fields: [dosen_id], references: [id])
+  pegawai Pegawai? @relation(fields: [pegawai_id], references: [id])
+  prodi   Prodi?   @relation(fields: [prodi_id], references: [id])
+
+  @@map("structural_positions")
+}
+
+enum PositionCode {
+  sekprodi
+  kaprodi
+  wakil_dekan_1
+  dekan
+  kabag_tu
+  kepala_lab
+}
+
+model Assignment {
+  id              Int            @id @default(autoincrement())
+  assignment_type AssignmentType
+  is_active       Boolean        @default(true)
+  created_at      DateTime       @default(now())
+
+  dosen_id     Int
+  mahasiswa_id Int?
+  pengajuan_id Int?
+
+  dosen     Dosen             @relation(fields: [dosen_id], references: [id])
+  mahasiswa Mahasiswa?        @relation(fields: [mahasiswa_id], references: [id])
+  pengajuan PengajuanLayanan? @relation(fields: [pengajuan_id], references: [id])
+
+  @@map("assignments")
+}
+
+enum AssignmentType {
+  dosen_pa
+  pembimbing_skripsi_1
+  pembimbing_skripsi_2
+  penguji_proposal
+  penguji_komprehensif_prodi
+  penguji_komprehensif_keislaman
+  penguji_skripsi
+  ketua_sidang
+  sekretaris_sidang
+  dosen_pembimbing_observasi
+  dosen_pembimbing_magang
+}
+
+// ===================================================================
+// 3. ACADEMIC PERIOD
+// ===================================================================
+
+model AcademicPeriod {
+  id               Int            @id @default(autoincrement())
+  nama_semester    String
+  tahun_akademik   String
+  tipe             TipeSemester
+  tanggal_mulai    DateTime
+  tanggal_berakhir DateTime?
+  status           StatusSemester @default(upcoming)
+  created_at       DateTime       @default(now())
+
+  pengajuan PengajuanLayanan[]
+  penomoran PenomoranCounter[]
+
+  @@map("academic_periods")
+}
+
+enum TipeSemester {
+  ganjil
+  genap
+}
+
+enum StatusSemester {
+  upcoming
+  active
+  completed
+}
+
+// ===================================================================
+// 4. KONFIGURASI LAYANAN
+// ===================================================================
+
+model JenisLayanan {
+  id                  Int             @id @default(autoincrement())
+  kode                String          @unique
+  nama                String
+  kategori            KategoriLayanan
+  scope_level         String
+  kode_klasifikasi_id Int
+  template_kode       String
+  is_active           Boolean         @default(true)
+  urutan              Int             @default(0)
+
+  kode_klasifikasi     KodeKlasifikasi      @relation(fields: [kode_klasifikasi_id], references: [id])
+  field_layanan        FieldLayanan[]
+  dokumen_persyaratan  DokumenPersyaratan[]
+  workflow_definitions WorkflowDefinition[]
+  pengajuan            PengajuanLayanan[]
+
+  @@map("jenis_layanan")
+}
+
+enum KategoriLayanan {
+  tugas_akhir
+  akademik
+}
+
+model FieldLayanan {
+  id               Int       @id @default(autoincrement())
+  jenis_layanan_id Int
+  nama_field       String
+  label            String
+  tipe_field       TipeField
+  is_required      Boolean   @default(true)
+  validation_rule  Json?
+  kondisi_tampil   Json?
+  urutan           Int       @default(0)
+  placeholder      String?
+  keterangan       String?
+
+  jenis_layanan JenisLayanan @relation(fields: [jenis_layanan_id], references: [id])
+
+  @@map("field_layanan")
+}
+
+enum TipeField {
+  text
+  textarea
+  number
+  date
+  datetime
+  time
+  select
+  multi_select
+  radio
+  checkbox
+  file
+  repeater
+  dosen_picker
+  mahasiswa_picker
+}
+
+model DokumenPersyaratan {
+  id               Int      @id @default(autoincrement())
+  jenis_layanan_id Int
+  nama_dokumen     String
+  format_diizinkan String[]
+  ukuran_max_mb    Float    @default(2)
+  is_required      Boolean  @default(true)
+  urutan           Int      @default(0)
+  keterangan       String?
+  validation_rule  Json?
+  sumber_validasi  String?
+
+  jenis_layanan     JenisLayanan       @relation(fields: [jenis_layanan_id], references: [id])
+  pengajuan_dokumen PengajuanDokumen[]
+
+  @@map("dokumen_persyaratan")
+}
+
+// ===================================================================
+// 5. WORKFLOW ENGINE
+// ===================================================================
+
+model WorkflowDefinition {
+  id               Int      @id @default(autoincrement())
+  jenis_layanan_id Int
+  versi            Int      @default(1)
+  is_active        Boolean  @default(true)
+  created_at       DateTime @default(now())
+
+  jenis_layanan JenisLayanan   @relation(fields: [jenis_layanan_id], references: [id])
+  steps         WorkflowStep[]
+
+  @@map("workflow_definitions")
+}
+
+model WorkflowStep {
+  id                     Int     @id @default(autoincrement())
+  workflow_definition_id Int
+  step_code              String
+  step_order             Int
+  status_code            String
+  actor_type             String
+  actor_condition        Json?
+  sla_days               Int?
+  sla_consequence        String?
+
+  workflow_definition WorkflowDefinition   @relation(fields: [workflow_definition_id], references: [id])
+  actions             WorkflowStepAction[]
+
+  @@map("workflow_steps")
+}
+
+model WorkflowStepAction {
+  id                    Int     @id @default(autoincrement())
+  workflow_step_id      Int
+  action_code           String
+  target_status         String
+  requires_reason       Boolean @default(false)
+  requires_confirmation Boolean @default(false)
+  label                 String
+  actionConfig          Json?
+
+  workflow_step WorkflowStep @relation(fields: [workflow_step_id], references: [id])
+
+  @@map("workflow_step_actions")
+}
+
+// ===================================================================
+// 6. PENGAJUAN (MAIN ENTITY)
+// ===================================================================
+
+model PengajuanLayanan {
+  id                     Int    @id @default(autoincrement())
+  kode_pengajuan         String @unique
+  mahasiswa_id           Int
+  jenis_layanan_id       Int
+  academic_period_id     Int
+  workflow_definition_id Int
+
+  status            StatusPengajuan @default(pending_staff_prodi)
+  current_step_code String?
+
+  scope_level String
+  fakultas_id Int
+  prodi_id    Int?
+
+  revisi_ke     Int     @default(1)
+  is_bypass     Boolean @default(false)
+  returned_from String?
+
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+  completed_at  DateTime?
+  terminated_at DateTime?
+
+  mahasiswa          Mahasiswa          @relation(fields: [mahasiswa_id], references: [id])
+  jenis_layanan      JenisLayanan       @relation(fields: [jenis_layanan_id], references: [id])
+  academic_period    AcademicPeriod     @relation(fields: [academic_period_id], references: [id])
+  pengajuan_data     PengajuanData?
+  pengajuan_dokumen  PengajuanDokumen[]
+  pengajuan_versi    PengajuanVersi[]
+  pengajuan_log      PengajuanLog[]
+  assignments        Assignment[]
+  dokumen_output     DokumenOutput[]
+  nilai_sidang       NilaiSidang[]
+  sla_schedules      SlaSchedule[]
+  penomoran_reserved PenomoranCounter[]
+
+  @@map("pengajuan_layanan")
+}
+
+enum StatusPengajuan {
+  draft
+  submitted
+  pending_staff_prodi
+  pending_staff_akademik
+  pending_pa
+  pending_kaprodi
+  pending_sekprodi
+  pending_kabag
+  pending_wd1
+  pending_dekan
+  pending_kepala_lab
+  bypass_active
+  revision_required
+  selesai
+  terminated
+}
+
+model PengajuanData {
+  id           Int  @id @default(autoincrement())
+  pengajuan_id Int  @unique
+  field_values Json
+
+  pengajuan PengajuanLayanan @relation(fields: [pengajuan_id], references: [id])
+
+  @@map("pengajuan_data")
+}
+
+model PengajuanDokumen {
+  id                     Int      @id @default(autoincrement())
+  pengajuan_id           Int
+  dokumen_persyaratan_id Int?
+  file_path              String
+  file_name              String
+  file_size_bytes        Int
+  mime_type              String
+  versi                  Int      @default(1)
+  is_auto_attached       Boolean  @default(false)
+  di_upload_oleh         Int
+  di_upload_pada         DateTime @default(now())
+
+  pengajuan           PengajuanLayanan    @relation(fields: [pengajuan_id], references: [id])
+  dokumen_persyaratan DokumenPersyaratan? @relation(fields: [dokumen_persyaratan_id], references: [id])
+
+  @@map("pengajuan_dokumen")
+}
+
+model PengajuanVersi {
+  id               Int      @id @default(autoincrement())
+  pengajuan_id     Int
+  versi_ke         Int
+  data_snapshot    Json
+  dokumen_snapshot Json
+  dibuat_oleh      Int
+  dibuat_pada      DateTime @default(now())
+  alasan_perubahan String?
+
+  pengajuan PengajuanLayanan @relation(fields: [pengajuan_id], references: [id])
+
+  @@map("pengajuan_versi")
+}
+
+model PengajuanLog {
+  id           Int      @id @default(autoincrement())
+  pengajuan_id Int
+  action_code  String
+  performed_by Int
+  from_status  String?
+  to_status    String?
+  target_step  String?
+  alasan       String?
+  metadata     Json?
+  created_at   DateTime @default(now())
+
+  pengajuan PengajuanLayanan @relation(fields: [pengajuan_id], references: [id])
+
+  @@map("pengajuan_log")
+}
+
+// ===================================================================
+// 7. JUDUL SKRIPSI (LIVING ENTITY)
+// ===================================================================
+
+model JudulSkripsi {
+  id              Int      @id @default(autoincrement())
+  mahasiswa_id    Int
+  judul_aktif     String
+  status          String   @default("aktif")
+  current_version Int      @default(1)
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  mahasiswa Mahasiswa             @relation(fields: [mahasiswa_id], references: [id])
+  history   JudulSkripsiHistory[]
+
+  @@map("judul_skripsi")
+}
+
+model JudulSkripsiHistory {
+  id                     Int      @id @default(autoincrement())
+  judul_skripsi_id       Int
+  versi_ke               Int
+  judul_text             String
+  diubah_oleh            Int
+  diubah_pada            DateTime @default(now())
+  konteks_perubahan      String?
+  alasan_perubahan       String?
+  referensi_pengajuan_id Int?
+
+  judul_skripsi JudulSkripsi @relation(fields: [judul_skripsi_id], references: [id])
+
+  @@map("judul_skripsi_history")
+}
+
+// ===================================================================
+// 8. PENOMORAN SURAT
+// ===================================================================
+
+model KodeKlasifikasi {
+  id        Int     @id @default(autoincrement())
+  kode      String  @unique
+  nama      String
+  deskripsi String?
+
+  jenis_layanan JenisLayanan[]
+  penomoran     PenomoranCounter[]
+
+  @@map("kode_klasifikasi")
+}
+
+model PenomoranCounter {
+  id                  Int       @id @default(autoincrement())
+  academic_period_id  Int
+  kode_klasifikasi_id Int
+  scope_level         String
+  scope_id            Int?
+  pengajuan_id        Int?
+  nomor_urut          Int
+  nomor_formatted     String
+  status              String    @default("reserved")
+  reserved_at         DateTime  @default(now())
+  activated_at        DateTime?
+  voided_at           DateTime?
+
+  academic_period  AcademicPeriod    @relation(fields: [academic_period_id], references: [id])
+  kode_klasifikasi KodeKlasifikasi   @relation(fields: [kode_klasifikasi_id], references: [id])
+  pengajuan        PengajuanLayanan? @relation(fields: [pengajuan_id], references: [id])
+
+  @@map("penomoran_counter")
+}
+
+// ===================================================================
+// 9. DOKUMEN OUTPUT
+// ===================================================================
+
+model DokumenOutput {
+  id                Int       @id @default(autoincrement())
+  pengajuan_id      Int
+  jenis_dokumen     String
+  nomor_surat       String?
+  file_path_preview String?
+  file_path_final   String?
+  is_final          Boolean   @default(false)
+  generated_at      DateTime  @default(now())
+  finalized_at      DateTime?
+  signed_by         Int?
+
+  pengajuan          PengajuanLayanan   @relation(fields: [pengajuan_id], references: [id])
+  dokumen_verifikasi DokumenVerifikasi?
+
+  @@map("dokumen_output")
+}
+
+model DokumenVerifikasi {
+  id         Int      @id @default(autoincrement())
+  dokumen_id Int      @unique
+  token      String   @unique
+  qr_url     String
+  is_active  Boolean  @default(true)
+  created_at DateTime @default(now())
+
+  dokumen        DokumenOutput   @relation(fields: [dokumen_id], references: [id])
+  verifikasi_log VerifikasiLog[]
+
+  @@map("dokumen_verifikasi")
+}
+
+model VerifikasiLog {
+  id                    BigInt   @id @default(autoincrement())
+  dokumen_verifikasi_id Int
+  ip_address            String
+  is_success            Boolean
+  attempted_at          DateTime @default(now())
+
+  dokumen_verifikasi DokumenVerifikasi @relation(fields: [dokumen_verifikasi_id], references: [id])
+
+  @@map("verifikasi_log")
+}
+
+// ===================================================================
+// 10. TTD SCAN
+// ===================================================================
+
+model TtdScan {
+  id          Int      @id @default(autoincrement())
+  user_id     Int      @unique
+  file_path   String
+  uploaded_at DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  user User @relation(fields: [user_id], references: [id])
+
+  @@map("ttd_scans")
+}
+
+// ===================================================================
+// 11. NILAI SIDANG
+// ===================================================================
+
+model NilaiSidang {
+  id                Int            @id @default(autoincrement())
+  pengajuan_id      Int
+  dosen_id          Int
+  assignment_type   AssignmentType
+  nilai             Float?
+  catatan           String?
+  keputusan         String?
+  nilai_per_penilai Json?
+  nilai_akhir       Float?
+  ipk_equivalent    Float?
+  yudisium          String?
+  input_at          DateTime       @default(now())
+
+  pengajuan PengajuanLayanan @relation(fields: [pengajuan_id], references: [id])
+  dosen     Dosen            @relation(fields: [dosen_id], references: [id])
+
+  @@map("nilai_sidang")
+}
+
+// ===================================================================
+// 12. SLA MANAGEMENT
+// ===================================================================
+
+model SlaSchedule {
+  id           Int       @id @default(autoincrement())
+  pengajuan_id Int
+  step_code    String
+  deadline     DateTime
+  consequence  String
+  is_triggered Boolean   @default(false)
+  triggered_at DateTime?
+  created_at   DateTime  @default(now())
+
+  pengajuan PengajuanLayanan @relation(fields: [pengajuan_id], references: [id])
+
+  @@map("sla_schedules")
+}
+
+// ===================================================================
+// 13. NOTIFIKASI
+// ===================================================================
+
+model Notification {
+  id          Int                  @id @default(autoincrement())
+  user_id     Int
+  title       String
+  message     String
+  severity    NotificationSeverity @default(info)
+  channel     NotificationChannel  @default(in_app)
+  entity_type String?
+  entity_id   Int?
+  is_read     Boolean              @default(false)
+  read_at     DateTime?
+  created_at  DateTime             @default(now())
+
+  user User @relation(fields: [user_id], references: [id])
+
+  @@map("notifications")
+}
+
+enum NotificationSeverity {
+  info
+  success
+  warning
+  urgent
+}
+
+enum NotificationChannel {
+  in_app
+  email
+  whatsapp
+}
+
+// ===================================================================
+// 14. AUDIT LOG
+// ===================================================================
+
+model AuditLog {
+  id          BigInt   @id @default(autoincrement())
+  timestamp   DateTime @default(now())
+  user_id     Int?
+  action      String
+  entity_type String?
+  entity_id   Int?
+  severity    String   @default("info")
+  metadata    Json?
+  ip_address  String?
+  user_agent  String?
+  request_id  String?
+
+  user User? @relation(fields: [user_id], references: [id])
+
+  @@map("audit_logs")
+}
+
+// ===================================================================
+// 15. SESSION
+// ===================================================================
+
+model Session {
+  id             Int      @id @default(autoincrement())
+  user_id        Int
+  token_hash     String   @unique
+  expires_at     DateTime
+  last_active_at DateTime @default(now())
+  ip_address     String?
+  user_agent     String?
+  created_at     DateTime @default(now())
+
+  user User @relation(fields: [user_id], references: [id])
+
+  @@map("sessions")
 }
