@@ -6,6 +6,8 @@ import { ProgressBar } from "@/components/pengajuan/ProgressBar";
 import { ActivityTimeline } from "@/components/pengajuan/ActivityTimeline";
 import { ActionButtons } from "@/components/workflow/ActionButtons";
 import { PembimbingPicker } from "@/components/workflow/PembimbingPicker";
+import { JadwalSidangInput } from "@/components/workflow/JadwalSidangInput";
+import { PengujiPicker } from "@/components/workflow/PengujiPicker";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
@@ -98,6 +100,14 @@ export default async function PengajuanDetailPage({ params }: { params: Promise<
 
       {pengajuan.jenis_layanan.kode === "TA-02" && pengajuan.status === "pending_sekprodi" && (
         <PembimbingPicker pengajuanId={pengajuan.id} />
+      )}
+
+      {pengajuan.jenis_layanan.kode === "TA-03" && pengajuan.status === "pending_staff_prodi" && (
+        <JadwalSidangInput pengajuanId={pengajuan.id} />
+      )}
+
+      {pengajuan.jenis_layanan.kode === "TA-03" && pengajuan.status === "pending_sekprodi" && (
+        <PengujiPicker pengajuanId={pengajuan.id} />
       )}
     </div>
   );
