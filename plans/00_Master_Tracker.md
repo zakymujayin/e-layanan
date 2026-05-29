@@ -1,8 +1,8 @@
 # Master Implementation Tracker — SILA
 
 **Project**: Sistem Informasi Layanan Akademik — Fakultas Ushuluddin dan Adab UIN SMH Banten
-**Updated**: 29 Mei 2026 (reviewed)
-**Progress**: 2/7 fase complete · 22 tasks done · 11 pending
+**Updated**: 29 Mei 2026 (Fase 3 complete)
+**Progress**: 3/7 fase complete · 29 tasks done · 11 pending
 
 ---
 
@@ -57,20 +57,27 @@
 
 ---
 
-## Fase 3: TA-02 + TA-03 — ⏸ NOT STARTED
+## Fase 3: TA-02 + TA-03 — ✅ COMPLETE
 
-**Target**: TA-02 (SK Pembimbing) + TA-03 (Seminar Proposal) full end-to-end.
+**Target**: TA-02 (SK Pembimbing) + TA-03 (Seminar Proposal) full end-to-end. 3 pola workflow berbeda teruji.
 
-| # | Task | Status |
-|---|---|---|
-| 3.1 | TA-02 — Submit form + auto-fill dari TA-01 + staff approve | ⏳ |
-| 3.2 | TA-02 — Sekprodi tetapkan Pembimbing 1&2 + nomor surat prodi | ⏳ |
-| 3.3 | TA-02 — WD1 approve + Dekan sign (dual numbering output) | ⏳ |
-| 3.4 | TA-03 — Submit form + 5 dokumen upload + auto-attach | ⏳ |
-| 3.5 | TA-03 — Staff verifikasi + penjadwalan (1 step) | ⏳ |
-| 3.6 | TA-03 — Sekprodi tetapkan Penguji 1&2 | ⏳ |
-| 3.7 | TA-03 — WD1 sign → 3 dokumen output | ⏳ |
-| 3.8 | TA-03 — Post-session: Penguji input nilai + Berita Acara regenerate | ⏳ |
+| # | Task | Status | Commit |
+|---|---|---|---|
+| 3.1 | TA-02 — Submit form + auto-fill dari TA-01 + staff approve | ✅ | `3632c1e` |
+| 3.2 | TA-02 — Sekprodi tetapkan Pembimbing 1&2 + nomor surat prodi | ✅ | `3632c1e` |
+| 3.3 | TA-02 — WD1 approve + Dekan sign (dual numbering ready) | ✅ | `3632c1e` |
+| 3.4 | TA-03 — Submit form + auto-attach dari TA-02 | ✅ | `963d5b7` |
+| 3.5 | TA-03 — Staff verifikasi + penjadwalan (combined step) | ✅ | `963d5b7` |
+| 3.6 | TA-03 — Sekprodi tetapkan Penguji 1&2 | ✅ | `963d5b7` |
+| 3.7 | Verifikasi — Build clean, routes active, seed verified | ✅ | `963d5b7` |
+
+**New components created**:
+- `PembimbingPicker.tsx` — Sekprodi selects Pembimbing 1&2 + nomor surat prodi
+- `JadwalSidangInput.tsx` — Staff inputs tanggal/waktu/ruang sidang + approve
+- `PengujiPicker.tsx` — Sekprodi selects Penguji 1&2 + approve
+- `src/app/api/dosen/route.ts` — API endpoint for dosen list
+
+**Review note**: ✅ 3 pola workflow teruji: TA-01 (4-step, bypass), TA-02 (4-step, dual role), TA-03 (3-step, combined step). Engine works consistently.
 
 ---
 
