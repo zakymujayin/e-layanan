@@ -5,6 +5,7 @@ import { StatusBadge } from "@/components/pengajuan/StatusBadge";
 import { ProgressBar } from "@/components/pengajuan/ProgressBar";
 import { ActivityTimeline } from "@/components/pengajuan/ActivityTimeline";
 import { ActionButtons } from "@/components/workflow/ActionButtons";
+import { PembimbingPicker } from "@/components/workflow/PembimbingPicker";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
@@ -93,6 +94,10 @@ export default async function PengajuanDetailPage({ params }: { params: Promise<
           isPA={isPA}
           judulCount={judulCount}
         />
+      )}
+
+      {pengajuan.jenis_layanan.kode === "TA-02" && pengajuan.status === "pending_sekprodi" && (
+        <PembimbingPicker pengajuanId={pengajuan.id} />
       )}
     </div>
   );
