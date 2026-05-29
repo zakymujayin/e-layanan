@@ -1,10 +1,15 @@
 # Entity Relationship Diagram & Database Design
 # Sistem Informasi Layanan Akademik (SILA)
 
-**Versi**: 1.0
-**Tanggal**: 28 Mei 2026
+**Versi**: 1.1 (Updated 29 Mei 2026 — fix kolom missing dari gap analysis)
 **ORM**: Prisma (pilihan final)
 **Database**: PostgreSQL 16+
+
+### Changelog v1.1
+- `mahasiswa`: tambah `jenis_kelamin`, `tempat_lahir`, `tanggal_lahir` (dibutuhkan template PDF)
+- `dosen`: tambah `pangkat_golongan` (dibutuhkan template PDF AK-01, AK-02)
+- `workflow_step_actions`: tambah `action_config Json?` (untuk konfigurasi reject bertingkat), ubah `target_status` jadi nullable
+- Tambah enum `JenisKelamin` (`L` / `P`)
 
 ---
 
@@ -96,6 +101,7 @@ model Dosen {
   gelar_depan       String?
   gelar_belakang    String?
   jabatan_fungsional String?
+  pangkat_golongan  String?  // mis. "Pembina Utama Muda / IVc" — dibutuhkan untuk dok PDF AK-01, AK-02
   bidang_keahlian   String?
   is_active         Boolean  @default(true)
   created_at        DateTime @default(now())
@@ -135,6 +141,10 @@ model Mahasiswa {
   angkatan          Int
   semester_aktif    Int?
   status_mahasiswa  StatusMahasiswa  @default(aktif)
+  // Data pribadi — dibutuhkan untuk generasi dokumen PDF
+  jenis_kelamin     JenisKelamin?
+  tempat_lahir      String?
+  tanggal_lahir     DateTime?
   created_at        DateTime         @default(now())
   updated_at        DateTime         @updatedAt
 
@@ -146,6 +156,11 @@ model Mahasiswa {
   assignments       Assignment[]
 
   @@map("mahasiswa")
+}
+
+enum JenisKelamin {
+  L  // Laki-laki
+  P  // Perempuan
 }
 
 enum StatusMahasiswa {
@@ -401,10 +416,13 @@ model WorkflowStepAction {
   id                  Int     @id @default(autoincrement())
   workflow_step_id    Int
   action_code         String  // maps to WorkflowAction enum
-  target_status       String  // status setelah action ini
+  target_status       String? // null jika target dipilih dynamic (reject bertingkat)
   requires_reason     Boolean @default(false)
   requires_confirmation Boolean @default(false)
   label               String  // label tombol di UI
+  // Konfigurasi tambahan — JSON nullable
+  // Contoh reject bertingkat: { "allow_target": ["pending_staff_prodi", "pending_pa", "pending_kaprodi"] }
+  action_config       Json?
 
   workflow_step       WorkflowStep @relation(fields: [workflow_step_id], references: [id])
 

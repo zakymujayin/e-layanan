@@ -1,9 +1,16 @@
 # Spesifikasi Template Dokumen PDF
 # Sistem Informasi Layanan Akademik (SILA)
 
-**Versi**: 1.0
+**Versi**: 1.1 (Updated 29 Mei 2026 — fix dari gap analysis AI Agent)
 **Tanggal**: 28 Mei 2026
 **Sumber**: Analisis 14 template Blade PHP existing
+
+### Changelog v1.1
+- Tambah Bagian 7: Variabel yang Missing dari v1.0 (ditemukan saat review template Blade)
+- Tambah Bagian 8: Shared Partials (kop surat & footer)
+- Tambah Bagian 9: Font Handling (Bookman Old Style di Linux)
+- Tambah Bagian 10: CSS Fixes (broken CSS di beberapa template)
+- Tambah Bagian 11: Konversi Blade → TypeScript (cheatsheet)
 
 ---
 
@@ -671,12 +678,316 @@ export async function buildDocumentContext(pengajuanId: number, jenisLayananKode
 
 ---
 
-## Catatan Penting untuk AI Agent
+## Catatan Penting untuk AI Agent (Bagian 6)
 
 1. **WAJIB** konversi template Blade `{{ $var }}` ke template literal TypeScript `${var}`
 2. **WAJIB** gunakan `placeholder()` helper untuk field yang belum terisi di mode preview
 3. **WAJIB** test PDF output dengan data nyata, bukan mock — layout bisa berbeda dari ekspektasi
 4. **JANGAN** ubah layout atau design template — hanya konversi sintaks Blade → TypeScript
-5. **PERHATIKAN** template TA-05 halaman 5 (`nilai-ujian-skripsi`) menggunakan `@foreach` Blade untuk 4 penilai — implementasikan dengan loop di TypeScript
-6. **PERHATIKAN** template TA-02 (SK Pembimbing) menggunakan **font Bookman Old Style** — pastikan font tersedia atau di-embed
-7. **QR Code** dan **TTD scan** dikirim sebagai HTML string (bukan path) ke template — sudah sesuai dengan implementasi Blade existing
+5. **PERHATIKAN** template TA-05 (`nilai-ujian-skripsi`) digenerate 4x untuk 4 penilai — implementasikan dengan loop TypeScript, hasilnya digabung jadi 1 PDF
+6. **PERHATIKAN** TA-05 total = 1 PDF dengan 9 halaman (5 jenis halaman + 4 halaman nilai per penilai via loop)
+7. **PERHATIKAN** TA-03, TA-04 = masing-masing 1 PDF multi-halaman (bukan file terpisah)
+8. **QR Code** dan **TTD scan** dikirim sebagai HTML string ke template
+
+---
+
+## Bagian 7: Variabel Missing (Ditemukan dari Review Template Blade)
+
+Variabel berikut ada di template Blade tapi **tidak tercantum di spesifikasi v1.0**. Sekarang sudah diperbaiki:
+
+### 7.1 Field Mahasiswa yang Dibutuhkan Template
+
+Kolom ini sekarang sudah ditambahkan ke tabel `mahasiswa` di ERD v1.1:
+
+| Variabel Template | Kolom DB | Tipe | Template yang Butuh |
+|---|---|---|---|
+| `$jk` | `mahasiswa.jenis_kelamin` | `JenisKelamin` enum (`L`/`P`) | ujian-skripsi (halaman 2-5) |
+| `$tempat_lahir_mahasiswa` | `mahasiswa.tempat_lahir` | `String?` | aktif-kuliah, masih-kuliah, seminar-proposal, ujian-skripsi |
+| `$tanggal_lahir_mahasiswa` | `mahasiswa.tanggal_lahir` | `DateTime?` | aktif-kuliah, masih-kuliah, pernah-kuliah, seminar-proposal, ujian-skripsi |
+
+### 7.2 Field Dosen yang Dibutuhkan Template
+
+Kolom ini sekarang sudah ditambahkan ke tabel `dosen` di ERD v1.1:
+
+| Variabel Template | Kolom DB | Tipe | Template yang Butuh | Sumber |
+|---|---|---|---|---|
+| `$pangkat_pejabat` | `dosen.pangkat_golongan` | `String?` | aktif-kuliah, masih-kuliah | Pangkat/golongan WD1 sebagai PNS, mis. "Pembina Utama Muda / IVc" |
+| `$jabatan_pejabat` | `structural_positions.position_code` (display name) | derived | aktif-kuliah, masih-kuliah | "Wakil Dekan I" — di-derive dari position_code |
+
+### 7.3 NIP Anggota Majelis di TA-05
+
+Template ujian-skripsi membutuhkan NIP/NIDN tiap anggota majelis untuk halaman tanda tangan:
+
+| Variabel Template | Sumber |
+|---|---|
+| `$nip_pembimbing_1`, `$nip_pembimbing_2` | `dosen.nidn` dari assignment `pembimbing_skripsi_1/2` |
+| `$nip_penguji_1`, `$nip_penguji_2` | `dosen.nidn` dari assignment `penguji_skripsi` |
+| `$nip_ketua_sidang` | `dosen.nidn` dari assignment `ketua_sidang` |
+| `$nip_sekretaris_sidang` | `dosen.nidn` dari assignment `sekretaris_sidang` |
+
+> **Catatan**: Template menggunakan kolom `nidn` dari tabel `dosen` untuk semua "NIP" pejabat dosen. Field ini sudah ada di ERD. Untuk pegawai (jika ada), gunakan `pegawai.nip`.
+
+---
+
+## Bagian 8: Shared Partials
+
+Semua 14 template mempunyai kop surat dan footer yang **100% identik**. Ekstrak ke shared partial untuk menghindari duplikasi.
+
+### 8.1 Kop Surat (Header)
+
+```typescript
+// lib/document/partials/kop-surat.ts
+
+export function renderKopSurat(logoSrc: string): string {
+  return `
+    <table class="header-table double-line">
+      <tr>
+        <td class="header-logo">
+          <img src="${logoSrc}" alt="Logo UIN" onerror="this.style.display='none'">
+        </td>
+        <td class="header-text">
+          <p class="kop-1">KEMENTERIAN AGAMA REPUBLIK INDONESIA</p>
+          <p class="kop-2">UNIVERSITAS ISLAM NEGERI</p>
+          <p class="kop-2">SULTAN MAULANA HASANUDDIN BANTEN</p>
+          <p class="kop-3">FAKULTAS USHULUDDIN DAN ADAB</p>
+          <p class="kop-4">
+            Jalan Syekh Nawawi Al Bantani Kp Andamui Sukawana Curug Kota Serang Banten 42171<br>
+            Telepon (0254) 200323-208849 Faximile (0254) 200022<br>
+            Website: <u>www.fuda.uinbanten.ac.id</u> E-mail: <u>surat@uinbanten.ac.id</u>
+          </p>
+        </td>
+      </tr>
+    </table>`;
+}
+```
+
+### 8.2 CSS Kop Surat (Shared)
+
+```typescript
+// lib/document/partials/kop-css.ts
+
+export const KOP_CSS = `
+  .header-table {
+    width: 100%; border-collapse: collapse;
+    margin-bottom: 10px; position: relative; border-bottom: 3px solid #000;
+  }
+  .header-table.double-line::after {
+    content: ""; position: absolute; left: 0; right: 0; bottom: -4px;
+    border-bottom: 1px solid #000;
+  }
+  .header-table td { border: none; padding: 0; vertical-align: middle; }
+  .header-logo { width: 100px; }
+  .header-logo img { width: 100px; height: auto; max-width: 100%; display: block; }
+  .header-text { text-align: center; }
+  .kop-1 { font-size: 13pt; font-weight: bold; margin: 0; }
+  .kop-2 { font-size: 12pt; font-weight: bold; margin: 0; }
+  .kop-3 { font-size: 14pt; font-weight: bold; margin: 0; }
+  .kop-4 { font-size: 9pt; margin: 0; margin-bottom: 5px; }
+`;
+```
+
+### 8.3 Footer QR Code (Shared)
+
+```typescript
+// lib/document/partials/footer.ts
+
+export function renderFooter(qrcode: string): string {
+  return `
+    <div class="footer">
+      <table class="footer-table">
+        <tr>
+          <td class="qrcode-cell">${qrcode}</td>
+          <td class="footer-text">
+            Dokumen ini diterbitkan secara elektronik melalui Sistem Informasi Layanan Akademik <br>
+            Fakultas Ushuluddin dan Adab UIN Sultan Maulana Hasanuddin Banten.
+          </td>
+        </tr>
+      </table>
+    </div>`;
+}
+
+export const FOOTER_CSS = `
+  .footer {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    padding: 10px 25mm; border-top: 1px solid #ddd; background: white;
+  }
+  table.footer-table { width: 100%; border-collapse: collapse; background: white; }
+  table.footer-table td {
+    border: none; padding: 5px; vertical-align: middle;
+    font-size: 9pt; color: #555; background: white;
+  }
+  .qrcode-cell { width: 15mm; text-align: center; }
+  .qrcode-cell img { width: 15mm; height: 15mm; display: block; }
+  .footer-text { text-align: left; line-height: 1.3; }
+`;
+```
+
+---
+
+## Bagian 9: Font Handling (Bookman Old Style di Linux)
+
+### 9.1 Masalah
+
+Font **Bookman Old Style** dipakai oleh 3 template:
+- `sk-pembimbing` (seluruh dokumen)
+- `ujian-komprehensif` (seluruh dokumen kecuali halaman 1 yang pakai Arial)
+- `ujian-skripsi` (seluruh dokumen kecuali halaman 1 yang pakai Arial)
+
+Font ini **tidak tersedia di Linux** (server environment), sehingga Puppeteer akan fallback ke font default — yang menyebabkan layout berubah.
+
+### 9.2 Solusi: Embed Font sebagai Base64
+
+```typescript
+// lib/document/fonts.ts
+import fs from 'fs';
+import path from 'path';
+
+// Letakkan file font di: public/fonts/bookman-old-style.ttf
+// Download dari: fonts.google.com atau lisensi yang sesuai
+const BOOKMAN_FONT_PATH = path.join(process.cwd(), 'public/fonts/bookman-old-style.ttf');
+
+export function getBookmanFontFace(): string {
+  // Embed font sebagai base64 agar tersedia di Puppeteer
+  const fontBuffer = fs.readFileSync(BOOKMAN_FONT_PATH);
+  const fontBase64 = fontBuffer.toString('base64');
+  return `
+    @font-face {
+      font-family: 'Bookman Old Style';
+      src: url('data:font/truetype;base64,${fontBase64}') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+    }
+  `;
+}
+```
+
+### 9.3 Fallback Strategy
+
+Jika font Bookman Old Style tidak tersedia atau tidak bisa di-embed:
+
+```css
+/* Fallback yang paling mendekati */
+font-family: 'Bookman Old Style', 'Bookman', 'URW Bookman L', 'Georgia', serif;
+```
+
+**Urutan prioritas fallback**: Bookman Old Style → Bookman → URW Bookman L (tersedia di Linux via `fonts-urw-base35`) → Georgia (sangat mirip) → serif default.
+
+**Rekomendasi**: Install `fonts-urw-base35` di server Linux:
+```bash
+apt-get install -y fonts-urw-base35
+```
+
+---
+
+## Bagian 10: CSS Fixes
+
+### 10.1 Template dengan CSS Broken
+
+Template berikut punya **CSS yang tidak well-formed** (missing closing bracket `}`) — ditemukan saat review Blade:
+
+| Template | Lokasi CSS Rusak |
+|---|---|
+| `template_cek_turnitin_blade.php` | `.header-logo {` dan `.header-logo img {` tidak punya closing bracket |
+| `template_seminar_proposal_blade.php` | `.header-logo {` dan `.header-logo img {` tidak punya closing bracket |
+| `template_sk_pembimbing_blade.php` | `.header-logo {` menggunakan selector berbeda (logo centered, bukan dalam table) |
+| Semua template selain bypass & persetujuan-judul | `.header-logo` tidak punya closing bracket `}` |
+
+### 10.2 Pattern CSS yang Rusak (di Blade)
+
+```css
+/* RUSAK di template Blade: */
+.header-logo {
+    width: clamp(80px, 10vw, 150px);
+    /* ← tidak ada } sebelum selector berikutnya */
+
+.header-logo img {
+    width: clamp(80px, 10vw, 150px);
+    height: auto;
+    max-width: 100%;
+    /* ← tidak ada } sebelum selector berikutnya */
+
+.header-text {   /* ← ini harusnya selector baru, tapi dibaca sebagai lanjutan blok sebelumnya */
+```
+
+### 10.3 Versi yang Sudah Diperbaiki (untuk TypeScript Template)
+
+```typescript
+// Gunakan versi CSS ini di semua TypeScript template
+export const HEADER_LOGO_CSS = `
+  .header-logo {
+    width: 100px;
+    text-align: left;
+    vertical-align: middle;
+  }
+  .header-logo img {
+    width: 100px;
+    height: auto;
+    max-width: 100%;
+    display: block;
+  }
+  .header-text {
+    text-align: center;
+    vertical-align: middle;
+  }
+`;
+```
+
+> **Catatan untuk AI Agent**: Puppeteer/Chrome cukup toleran terhadap CSS tidak valid — browser akan mencoba parse dan hasilnya tidak bisa diprediksi. **WAJIB** perbaiki CSS saat konversi ke TypeScript.
+
+---
+
+## Bagian 11: Konversi Blade → TypeScript (Cheatsheet)
+
+Referensi cepat untuk konversi semua sintaks Blade PHP ke TypeScript:
+
+| Blade PHP | TypeScript Equivalent | Catatan |
+|---|---|---|
+| `{{ $variable }}` | `${variable}` | HTML-escaped (aman) |
+| `{!! $html !!}` | `${html}` | Raw HTML — sudah raw di template literal TS |
+| `{{ $var ?? 'fallback' }}` | `${variable ?? 'fallback'}` | Null coalescing identik |
+| `@if(condition)` | `${condition ? '...' : ''}` | Ternary atau conditional string |
+| `@if(isset($var) && $var)` | `${variable ? '...' : ''}` | Truthy check |
+| `@foreach($list as $item)` | `${list.map(item => '...').join('')}` | Array map |
+| `@php ... @endphp` | Pindahkan ke function TS sebelum render | Pre-compute di luar template string |
+| `\Carbon\Carbon::now()->translatedFormat('d/m/Y')` | `format(new Date(), 'd MMMM yyyy', { locale: id })` | date-fns + locale id |
+| `\Carbon\Carbon::parse($tgl)->translatedFormat('d F Y')` | `format(new Date(tgl), 'd MMMM yyyy', { locale: id })` | |
+| `\App\Models\AppSetting::get('header_logo')` | `await getAppSetting('header_logo')` | Query Prisma |
+| `Storage::disk('public')->url($path)` | `storageProvider.getServeUrl(path)` | Storage abstraction (Batch 2 §7) |
+| `asset('images/logo-uin.png')` | `'/images/logo-uin.png'` | File di `/public/images/` |
+| `strtoupper($str)` | `str.toUpperCase()` | |
+| `implode(', ', array_column($arr, 'key'))` | `arr.map(i => i.key).join(', ')` | |
+| `is_array($var)` | `Array.isArray(variable)` | |
+| `nl2br(e($text))` | `text.replace(/\n/g, '<br>')` | Perhatikan XSS jika text dari user |
+| `onerror="this.style.display='none'"` | Tetap pakai (valid inline JS di Puppeteer) | |
+
+### 11.1 Contoh Konversi Lengkap
+
+**Blade (sebelum)**:
+```blade
+<p>Mahasiswa {{ strtoupper($nama ?? 'NAMA') }}</p>
+@if(isset($is_ortu_pns) && $is_ortu_pns)
+  <p>NIP Ortu: {{ $nip_ortu ?? '-' }}</p>
+@endif
+@foreach($judul_list as $i => $judul)
+  <tr><td>{{ $i + 1 }}</td><td>{{ $judul }}</td></tr>
+@endforeach
+```
+
+**TypeScript (sesudah)**:
+```typescript
+function renderMahasiswaSection(data: TemplateData): string {
+  const nama = data.nama_mahasiswa?.toUpperCase() ?? 'NAMA';
+  const pnsSection = data.is_ortu_pns
+    ? `<p>NIP Ortu: ${data.nip_ortu ?? '-'}</p>`
+    : '';
+  const judulRows = data.judul_list
+    .map((judul, i) => `<tr><td>${i + 1}</td><td>${judul}</td></tr>`)
+    .join('');
+
+  return `
+    <p>Mahasiswa ${nama}</p>
+    ${pnsSection}
+    <table>${judulRows}</table>
+  `;
+}
+```

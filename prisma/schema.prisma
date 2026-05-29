@@ -52,6 +52,7 @@ model Dosen {
   gelar_belakang     String?
   jabatan_fungsional String?
   bidang_keahlian    String?
+  pangkat_golongan   String?
   is_active          Boolean  @default(true)
   created_at         DateTime @default(now())
   updated_at         DateTime @updatedAt
@@ -352,7 +353,7 @@ model WorkflowStepAction {
   id                    Int     @id @default(autoincrement())
   workflow_step_id      Int
   action_code           String
-  target_status         String
+  target_status         String?
   requires_reason       Boolean @default(false)
   requires_confirmation Boolean @default(false)
   label                 String

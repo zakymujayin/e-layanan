@@ -2,7 +2,21 @@
 # Hal yang Perlu Diklarifikasi & Disediakan Sebelum/Selama Development
 
 **Tanggal**: 29 Mei 2026
-**Versi**: 2.0 (updated setelah review template Blade)
+**Versi**: 2.1 (Updated — semua gap teknis sudah difix oleh Claude)
+
+---
+
+## Status Keseluruhan
+
+| Kategori | Total Gap | Sudah Resolved | Perlu Stakeholder | Deferred |
+|---|---|---|---|---|
+| 1: Asset Belum Tersedia | 4 | 1 | 3 | — |
+| 2: Inkonsistensi Dokumen | 3 | 3 | — | — |
+| 3: Keputusan Stakeholder | 6 | — | 6 | — |
+| 4: Keputusan Teknis | 5 | 5 | — | — |
+| 5: Phase 2+ (deferred) | 7 | — | — | 7 |
+| 6: Temuan Template Blade | 6 | 6 | — | — |
+| **Total** | **31** | **15** | **9** | **7** |
 
 ---
 
@@ -21,7 +35,7 @@
 
 | No | Isu | Dokumen A | Dokumen B | Rekomendasi | Status |
 |---|---|---|---|---|---|
-| 1 | Kolom **`extra_config`** di seed data workflow (dok 12) menyimpan `{ allow_target: [...] }` untuk reject bertingkat, tapi **tidak ada kolom ini di Prisma Schema** (dok 07) | [12_Seed_Data_Workflow.md] | [07_ERD_Database_Design.md] | **Tambahkan kolom `action_config` (JSON, nullable) ke tabel `workflow_step_actions`** di schema Prisma | ⏳ |
+| 1 | Kolom **`extra_config`** di seed data workflow (dok 12) menyimpan `{ allow_target: [...] }` untuk reject bertingkat, tapi **tidak ada kolom ini di Prisma Schema** (dok 07) | [12_Seed_Data_Workflow.md] | [07_ERD_Database_Design.md] | **Tambahkan kolom `action_config` (JSON, nullable) ke tabel `workflow_step_actions`** di schema Prisma | ✅ **FIXED** — ERD v1.1: kolom `action_config Json?` ditambahkan ke `workflow_step_actions`, `target_status` dibuat nullable |
 | 2 | **Jumlah output TA-05**: dok 01 & BPMN menyebut 5 dokumen, dok 11 menyebut 5+. **Setelah review template Blade**, terkonfirmasi: template `ujian_skripsi` menghasilkan **9 halaman dalam 1 file** (5 halaman jenis + 4 halaman nilai per penilai via `@foreach`). Jadi secara konseptual 5 jenis dokumen, secara teknis **1 file PDF dengan 9 halaman** | [01_Inventarisasi_Layanan.md] §2.3 | [template_ujian_skripsi.blade.php] | ✅ **RESOLVED** — 1 file PDF dengan 9 halaman. BPMN menyebut 5 jenis dokumen = benar secara konseptual. Template blade = 9 halaman gabungan |
 | 3 | **Multi-page vs multi-file**: Template `seminar_proposal` = 3 halaman dalam 1 file, `ujian_komprehensif` = 5 halaman dalam 1 file, `ujian_skripsi` = 9 halaman dalam 1 file. Tapi dok 11 menyebut "file terpisah" | [11_Spesifikasi_Template_PDF.md] | [template blade actual] | ✅ **RESOLVED** — Template actual = 1 file gabungan (multi-page). Tidak perlu dipisah per file. Lebih praktis untuk download. |
 
@@ -82,7 +96,7 @@ Setelah semua 14 template Blade PHP direview, berikut temuan yang perlu diperhat
 | **Bookman Old Style** | sk-pembimbing, ujian-komprehensif, ujian-skripsi | ⚠️ **TIDAK** tersedia di Linux secara default. Perlu di-embed via `@font-face` atau gunakan fallback Times New Roman |
 | **Arial** | masih-kuliah, ujian-komprehensif (halaman pertama), ujian-skripsi (halaman pertama) | Umum tersedia |
 
-**Rekomendasi**: Di Puppeteer, embed font Bookman Old Style sebagai base64 di CSS, atau fallback ke Times New Roman.
+**Status**: ✅ **FIXED** — Dok 11 v1.1 Bagian 9 sudah mendokumentasikan solusi embed font + fallback `fonts-urw-base35`.
 
 ### 6.2 Dependency Laravel di Template (Perlu Diganti)
 
@@ -163,7 +177,7 @@ Template Blade menggunakan beberapa variabel yang **tidak tercantum** di dokumen
 | `$nip_ketua_sidang`, `$nip_sekretaris_sidang` | ujian-skripsi (halaman 3-4) | NIP/NIDN ketua & sekretaris |
 | `$nip_penguji_1`, `$nip_penguji_2` | seminar-proposal (berita acara) | Sudah di-comment-out di template, mungkin tidak dipakai |
 
-**Rekomendasi**: Tambahkan field `jenis_kelamin`, `tempat_lahir`, `tanggal_lahir` ke tabel `mahasiswa` jika belum ada. Untuk NIP/NIDN dosen, ambil dari tabel `dosen.nidn`.
+**Status**: ✅ **FIXED** — ERD v1.1 sudah menambahkan `jenis_kelamin`, `tempat_lahir`, `tanggal_lahir` ke tabel `mahasiswa` dan `pangkat_golongan` ke tabel `dosen`. Dok 11 v1.1 Bagian 7 mendokumentasikan semua variabel yang ditemukan.
 
 ### 6.6 CSS yang Rusak/Broken di Beberapa Template
 
@@ -181,21 +195,46 @@ Template `seminar-proposal` dan `cek-turnitin` punya CSS yang **tidak well-forme
 
 **Rekomendasi**: Perbaiki CSS saat konversi ke TypeScript template. Tambahkan closing bracket yang hilang.
 
+**Status**: ✅ **FIXED** — Dok 11 v1.1 Bagian 10 mendokumentasikan pattern CSS yang rusak, versi yang sudah diperbaiki, dan instruksi wajib untuk agent.
+
 ---
 
-## Ringkasan Action Items untuk AI Agent (Updated)
+## Ringkasan Action Items untuk AI Agent (Updated v2.1)
 
-Saat memulai development, agent perlu melakukan:
+### ✅ Sudah Difix oleh Claude — Agent TIDAK Perlu Lakukan Lagi
 
-1. **[Wajib]** Scaffold Next.js 16 + shadcn/ui (new-york) + Prisma + PostgreSQL
-2. **[Wajib]** Tambahkan kolom `action_config JSON` ke tabel `workflow_step_actions` di Prisma schema
-3. **[Wajib]** Tambahkan kolom `jenis_kelamin`, `tempat_lahir`, `tanggal_lahir` ke tabel `mahasiswa` di Prisma schema
-4. **[Wajib]** Ekstrak kop surat + footer jadi shared partial (`lib/document/partials/`)
-5. **[Wajib]** Embed font Bookman Old Style untuk template SK Pembimbing, Ujian Komprehensif, Ujian Skripsi
-6. **[Wajib]** Perbaiki CSS broken di template seminar-proposal dan cek-turnitin saat konversi
-7. **[Wajib]** Konversi semua Blade syntax (`{{ }}`, `@foreach`, `@php`, dll) ke TypeScript template literal
-8. **[Tanya user jika belum jelas]** Brand guideline warna kampus
-9. **[Tanya user jika belum jelas]** Data master awal (dosen, mahasiswa, pegawai, prodi)
-10. **[Gunakan nilai default]** TA-05 output = 1 PDF dengan 9 halaman (sesuai template blade)
-11. **[Gunakan nilai default]** Multi-page template (seminar-proposal, ujian-komprehensif) = 1 file gabungan
-12. **[Gunakan nilai default]** Auth.js v5, Puppeteer, Bahasa Indonesia untuk slug, `action_config` sebagai nama kolom
+| No | Action | Dokumen yang Sudah Diupdate |
+|---|---|---|
+| 1 | Tambah `action_config Json?` ke tabel `workflow_step_actions` | ERD v1.1 (dok 07) |
+| 2 | Buat `target_status` nullable di `workflow_step_actions` | ERD v1.1 (dok 07) |
+| 3 | Tambah `jenis_kelamin`, `tempat_lahir`, `tanggal_lahir` ke tabel `mahasiswa` | ERD v1.1 (dok 07) |
+| 4 | Tambah `pangkat_golongan` ke tabel `dosen` | ERD v1.1 (dok 07) |
+| 5 | Dokumentasikan variabel missing dari template Blade | Template Spec v1.1 (dok 11) Bagian 7 |
+| 6 | Dokumentasikan shared partial kop surat & footer | Template Spec v1.1 (dok 11) Bagian 8 |
+| 7 | Dokumentasikan solusi font Bookman Old Style di Linux | Template Spec v1.1 (dok 11) Bagian 9 |
+| 8 | Dokumentasikan CSS fixes | Template Spec v1.1 (dok 11) Bagian 10 |
+| 9 | Dokumentasikan cheatsheet Blade → TypeScript | Template Spec v1.1 (dok 11) Bagian 11 |
+
+### ⏳ Masih Perlu Dilakukan saat Development
+
+| No | Action | Prioritas |
+|---|---|---|
+| 1 | Scaffold Next.js 16 + shadcn/ui (new-york) + Prisma + PostgreSQL | 🔴 Wajib pertama |
+| 2 | Jalankan `prisma migrate` dari ERD v1.1 | 🔴 Wajib |
+| 3 | Buat `lib/document/partials/kop-surat.ts` dan `footer.ts` | 🔴 Sebelum buat template |
+| 4 | Install `fonts-urw-base35` di server atau embed Bookman font | 🔴 Sebelum generate PDF TA-02/04/05 |
+| 5 | Perbaiki CSS broken saat konversi template Blade → TypeScript | 🔴 Saat konversi |
+| 6 | Konversi 14 Blade template → 24 TypeScript template function | 🔴 Wajib |
+| 7 | Tanya user soal brand guideline warna kampus | 🟡 Sebelum UI final |
+| 8 | Tanya user soal data master awal (dosen, mahasiswa, pegawai, prodi) | 🟡 Sebelum testing |
+
+### 🏛️ Butuh Konfirmasi Stakeholder (Bukan Urusan Developer)
+
+| No | Action | Siapa yang Konfirmasi |
+|---|---|---|
+| 1 | Kode klasifikasi surat (PP.00.9, KP.01.2, dll) | Tim TU Fakultas |
+| 2 | Range IPK Yudisium | Wakil Dekan 1 |
+| 3 | SLA PA TA-01 = 7 hari kerja | WD1 + Kaprodi |
+| 4 | Batas similarity Turnitin = 25% | Kepala Lab Multimedia |
+| 5 | Jumlah maksimal ujian ulang TA-04/TA-05 | Wakil Dekan 1 |
+| 6 | Format nomor surat permohonan prodi (TA-02) | Sekprodi masing-masing |
