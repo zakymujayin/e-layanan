@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
+import type { PositionCode } from "@/generated/prisma/enums";
 
 interface Pejabat {
   nama: string;
@@ -59,7 +60,7 @@ function angkaKeTeks(n: number): string {
 }
 
 async function getPejabat(
-  positionCode: string
+  positionCode: PositionCode
 ): Promise<Pejabat | null> {
   const pos = await prisma.structuralPosition.findFirst({
     where: { position_code: positionCode, is_active: true },
