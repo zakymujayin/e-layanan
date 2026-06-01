@@ -1,8 +1,8 @@
 # Master Implementation Tracker — SILA
 
 **Project**: Sistem Informasi Layanan Akademik — Fakultas Ushuluddin dan Adab UIN SMH Banten
-**Updated**: 29 Mei 2026 (Fase 3 complete)
-**Progress**: 3/7 fase complete · 29 tasks done · 11 pending
+**Updated**: 29 Mei 2026 (Phase 4 ready to execute)
+**Progress**: 3/7 fase complete · 29 tasks done · 11 pending | Fase 4: 8 tasks ready
 
 ---
 
@@ -81,21 +81,23 @@
 
 ---
 
-## Fase 4: PDF Generation + TTD + QR — ⏸ NOT STARTED
+## Fase 4: PDF Generation + TTD + QR — ⏳ PLAN READY
 
-**Target**: 14 template Blade dikonversi ke TypeScript, PDF generation dengan Puppeteer.
+**Target**: 4 Blade template dikonversi ke TypeScript, PDF generation via Puppeteer. Cakupan: TA-01 (bypass + final), TA-02 (SK Pembimbing), TA-03 (3 halaman).
+
+**Plan**: `docs/superpowers/plans/2026-05-29-fase-4-pdf-generation.md`
+**Spec**: `docs/superpowers/specs/2026-05-29-fase-4-pdf-generation-design.md`
 
 | # | Task | Status |
 |---|---|---|
-| 4.1 | Extract shared partials — kop surat + footer identik | ⏳ |
-| 4.2 | Konversi 14 Blade → TypeScript template functions | ⏳ |
-| 4.3 | Embed font Bookman Old Style via @font-face | ⏳ |
-| 4.4 | Fix CSS broken di `seminar-proposal` dan `cek-turnitin` | ⏳ |
-| 4.5 | Live Preview mode — placeholder kuning | ⏳ |
-| 4.6 | TTD Scan embedding — check pejabat upload TTD, embed ke PDF | ⏳ |
-| 4.7 | QR Code + Token Verifikasi — generate, halaman publik `/verifikasi` | ⏳ |
-| 4.8 | Reserved Numbering — counter atomic + format Srikandi | ⏳ |
-| 4.9 | Context Builder — fetch data pengajuan + mahasiswa + pejabat | ⏳ |
+| 4.1 | Install Puppeteer + browser pool (`generate-pdf.ts`) | ⏳ |
+| 4.2 | Shared partials (kop surat, footer, styles, placeholder) | ⏳ |
+| 4.3 | Font Bookman Old Style embedding (`fonts.ts`) | ⏳ |
+| 4.4 | Context builder (`context-builder.ts`) | ⏳ |
+| 4.5 | Reserved numbering (reserve/activate/void, format FUDA) | ⏳ |
+| 4.6 | Konversi 4 Blade templates → TypeScript | ⏳ |
+| 4.7 | PDF API route + UI button di detail page | ⏳ |
+| 4.8 | Build verification | ⏳ |
 
 ---
 
@@ -197,6 +199,22 @@ src/
 │   │   ├── check.ts
 │   │   ├── index.ts
 │   │   └── scope.ts
+│   ├── document/              # NEW in Phase 4
+│   │   ├── context-builder.ts
+│   │   ├── generate-pdf.ts
+│   │   ├── fonts.ts
+│   │   ├── numbering.ts
+│   │   ├── partials/
+│   │   │   ├── footer.ts
+│   │   │   ├── kop-surat.ts
+│   │   │   ├── placeholder.ts
+│   │   │   └── styles.ts
+│   │   └── templates/
+│   │       ├── bypass-judul.ts
+│   │       ├── index.ts
+│   │       ├── persetujuan-judul.ts
+│   │       ├── seminar-proposal.ts
+│   │       └── sk-pembimbing.ts
 │   ├── nim-validator/
 │   │   ├── local.ts
 │   │   └── types.ts
