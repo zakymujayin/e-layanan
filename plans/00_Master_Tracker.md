@@ -1,8 +1,8 @@
 # Master Implementation Tracker — SILA
 
 **Project**: Sistem Informasi Layanan Akademik — Fakultas Ushuluddin dan Adab UIN SMH Banten
-**Updated**: 29 Mei 2026 (Phase 4 ready to execute)
-**Progress**: 3/7 fase complete · 29 tasks done · 11 pending | Fase 4: 8 tasks ready
+**Updated**: 29 Mei 2026 (Fase 4 complete)
+**Progress**: 4/7 fase complete · 37 tasks done · 3 pending
 
 ---
 
@@ -81,23 +81,46 @@
 
 ---
 
-## Fase 4: PDF Generation + TTD + QR — ⏳ PLAN READY
+## Fase 4: PDF Generation + TTD + QR — ✅ COMPLETE
 
 **Target**: 4 Blade template dikonversi ke TypeScript, PDF generation via Puppeteer. Cakupan: TA-01 (bypass + final), TA-02 (SK Pembimbing), TA-03 (3 halaman).
 
 **Plan**: `docs/superpowers/plans/2026-05-29-fase-4-pdf-generation.md`
 **Spec**: `docs/superpowers/specs/2026-05-29-fase-4-pdf-generation-design.md`
 
-| # | Task | Status |
-|---|---|---|
-| 4.1 | Install Puppeteer + browser pool (`generate-pdf.ts`) | ⏳ |
-| 4.2 | Shared partials (kop surat, footer, styles, placeholder) | ⏳ |
-| 4.3 | Font Bookman Old Style embedding (`fonts.ts`) | ⏳ |
-| 4.4 | Context builder (`context-builder.ts`) | ⏳ |
-| 4.5 | Reserved numbering (reserve/activate/void, format FUDA) | ⏳ |
-| 4.6 | Konversi 4 Blade templates → TypeScript | ⏳ |
-| 4.7 | PDF API route + UI button di detail page | ⏳ |
-| 4.8 | Build verification | ⏳ |
+| # | Task | Status | Commit |
+|---|---|---|---|
+| 4.1 | Install Puppeteer + browser pool (`generate-pdf.ts`) | ✅ | `bc24f55` |
+| 4.2 | Shared partials (kop surat, footer, styles, placeholder) | ✅ | `6a136aa` |
+| 4.3 | Font Bookman Old Style embedding (`fonts.ts`) | ✅ | `6a136aa` |
+| 4.4 | Context builder (`context-builder.ts`) | ✅ | `99add3e` |
+| 4.5 | Reserved numbering (reserve/activate/void, format FUDA) | ✅ | `6a136aa` |
+| 4.6 | Konversi 4 Blade templates → TypeScript | ✅ | `78dde5a` |
+| 4.7 | PDF API route + UI button di detail page | ✅ | `3dcd460` |
+| 4.8 | Build verification | ✅ | `d5bde11` |
+
+**New files (14)**:
+```
+src/lib/document/
+  generate-pdf.ts          — Puppeteer browser pool singleton
+  fonts.ts                 — Bookman Old Style base64 embed
+  context-builder.ts       — buildDocumentContext() cascade fetch
+  numbering.ts             — reserve/activate/void nomor surat FUDA
+  partials/
+    kop-surat.ts           — renderKopSurat() shared letterhead
+    footer.ts              — renderFooter() QR code footer
+    styles.ts              — 5 shared CSS constants
+    placeholder.ts         — placeholder() + reserved() helpers
+  templates/
+    bypass-judul.ts        — TA-01 bypass (form offline PA)
+    persetujuan-judul.ts   — TA-01 final (TTD WD1)
+    sk-pembimbing.ts       — TA-02 SK Pembimbing (Bookman font, TTD Dekan)
+    seminar-proposal.ts    — TA-03 3-page (Surat Tugas + Berita Acara + Daftar Hadir)
+    index.ts               — selectTemplate() selector
+src/app/api/pengajuan/[id]/pdf/route.ts  — PDF API endpoint
+```
+
+**Bukti build**: `npm run build` passes. 2 pre-existing Next.js 16 turbopack warnings (non-blocking).
 
 ---
 
