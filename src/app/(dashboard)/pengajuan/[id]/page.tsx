@@ -109,6 +109,27 @@ export default async function PengajuanDetailPage({ params }: { params: Promise<
       {pengajuan.jenis_layanan.kode === "TA-03" && pengajuan.status === "pending_sekprodi" && (
         <PengujiPicker pengajuanId={pengajuan.id} />
       )}
+
+      {/* PDF Actions */}
+      <div className="flex items-center gap-3 pt-4 border-t">
+        {pengajuan.status !== "selesai" ? (
+          <Link
+            href={`/api/pengajuan/${pengajuan.id}/pdf?mode=preview`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <Button variant="outline" type="button">
+              Pratinjau PDF
+            </Button>
+          </Link>
+        ) : (
+          <Link
+            href={`/api/pengajuan/${pengajuan.id}/pdf?mode=final`}
+          >
+            <Button type="button">Unduh PDF Final</Button>
+          </Link>
+        )}
+      </div>
     </div>
   );
 }
