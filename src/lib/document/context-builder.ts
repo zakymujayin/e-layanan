@@ -48,6 +48,36 @@ export interface DocumentContext {
   ttd: string | null;
   qrcode: string | null;
   mode: "preview" | "final";
+
+  peruntukan: string | null;
+  pejabat_tujuan: string | null;
+  instansi_tujuan: string | null;
+  lokasi_observasi: string | null;
+  mata_kuliah: string | null;
+  tanggal_mulai: string | null;
+  tanggal_selesai: string | null;
+  dosen_pembimbing: string | null;
+  judul_penelitian: string | null;
+  lokasi_penelitian: string | null;
+  tujuan_penelitian: string | null;
+  alamat_instansi: string | null;
+  bidang_magang: string | null;
+  tujuan_rekomendasi: string | null;
+  pihak_penerima: string | null;
+  tipe_rekomendasi: string | null;
+  is_ortu_pns: string | null;
+  nama_ortu: string | null;
+  nip_ortu: string | null;
+  pangkat_ortu: string | null;
+  jabatan_ortu: string | null;
+  instansi_ortu: string | null;
+  hubungan_ortu: string | null;
+  submission_id_turnitin: string | null;
+  url_turnitin: string | null;
+  similarity_percentage: string | null;
+  ketua_sidang: string | null;
+  sekretaris_sidang: string | null;
+  layanan_kode: string | null;
 }
 
 function angkaKeTeks(n: number): string {
@@ -124,12 +154,34 @@ export async function buildDocumentContext(
     (a) => a.assignment_type === "pembimbing_skripsi_2" && a.is_active
   );
 
+  const kompProdi = pengajuan.assignments.find(
+    (a) => a.assignment_type === "penguji_komprehensif_prodi" && a.is_active
+  );
+  const kompKeislaman = pengajuan.assignments.find(
+    (a) => a.assignment_type === "penguji_komprehensif_keislaman" && a.is_active
+  );
+
+  const ketuaSidang = pengajuan.assignments.find(
+    (a) => a.assignment_type === "ketua_sidang" && a.is_active
+  );
+  const sekretarisSidang = pengajuan.assignments.find(
+    (a) => a.assignment_type === "sekretaris_sidang" && a.is_active
+  );
+
+  const pengujiSkripsi = pengajuan.assignments.filter(
+    (a) => a.assignment_type === "penguji_skripsi" && a.is_active
+  );
+
   const penguji1 = pengajuan.assignments.find(
     (a) => a.assignment_type === "penguji_proposal" && a.is_active
   );
   const penguji2 = pengajuan.assignments.find(
     (a) => a.assignment_type === "penguji_proposal" && a.is_active
       && a.id !== penguji1?.id
+  );
+
+  const dosenPembimbingObs = pengajuan.assignments.find(
+    (a) => (a.assignment_type === "dosen_pembimbing_observasi" || a.assignment_type === "dosen_pembimbing_magang") && a.is_active
   );
 
   const judulList: string[] = [];
@@ -184,13 +236,43 @@ export async function buildDocumentContext(
       ? `${fieldValues["waktu_mulai"]} - ${fieldValues["waktu_selesai"] ?? ""} WIB`
       : null,
     ruang_sidang: (fieldValues["ruang_sidang"] as string) ?? null,
-    penguji_1: penguji1?.dosen?.nama_lengkap ?? null,
-    penguji_2: penguji2?.dosen?.nama_lengkap ?? null,
+    penguji_1: kompProdi?.dosen?.nama_lengkap ?? penguji1?.dosen?.nama_lengkap ?? kompProdi?.dosen?.nama_lengkap ?? null,
+    penguji_2: kompKeislaman?.dosen?.nama_lengkap ?? penguji2?.dosen?.nama_lengkap ?? null,
 
     ttd: mode === "final"
       ? (wd1?.ttd_html ?? dekan?.ttd_html ?? null)
       : null,
     qrcode: null,
     mode,
+
+    peruntukan: (fieldValues["peruntukan"] as string) ?? null,
+    pejabat_tujuan: (fieldValues["pejabat_tujuan"] as string) ?? null,
+    instansi_tujuan: (fieldValues["instansi_tujuan"] as string) ?? null,
+    lokasi_observasi: (fieldValues["lokasi_observasi"] as string) ?? null,
+    mata_kuliah: (fieldValues["mata_kuliah"] as string) ?? null,
+    tanggal_mulai: (fieldValues["tanggal_mulai"] as string) ?? null,
+    tanggal_selesai: (fieldValues["tanggal_selesai"] as string) ?? null,
+    dosen_pembimbing: dosenPembimbingObs?.dosen?.nama_lengkap ?? null,
+    judul_penelitian: (fieldValues["judul_penelitian"] as string) ?? null,
+    lokasi_penelitian: (fieldValues["lokasi_penelitian"] as string) ?? null,
+    tujuan_penelitian: (fieldValues["tujuan_penelitian"] as string) ?? null,
+    alamat_instansi: (fieldValues["alamat_instansi"] as string) ?? null,
+    bidang_magang: (fieldValues["bidang_magang"] as string) ?? null,
+    tujuan_rekomendasi: (fieldValues["tujuan_rekomendasi"] as string) ?? null,
+    pihak_penerima: (fieldValues["pihak_penerima"] as string) ?? null,
+    tipe_rekomendasi: (fieldValues["tipe_rekomendasi"] as string) ?? null,
+    is_ortu_pns: (fieldValues["orang_tua_pns"] as string) ?? null,
+    nama_ortu: (fieldValues["nama_orang_tua"] as string) ?? null,
+    nip_ortu: (fieldValues["nip_orang_tua"] as string) ?? null,
+    pangkat_ortu: (fieldValues["pangkat_golongan"] as string) ?? null,
+    jabatan_ortu: (fieldValues["jabatan_orang_tua"] as string) ?? null,
+    instansi_ortu: (fieldValues["instansi_orang_tua"] as string) ?? null,
+    hubungan_ortu: (fieldValues["hubungan_orang_tua"] as string) ?? null,
+    submission_id_turnitin: (fieldValues["submission_id_turnitin"] as string) ?? null,
+    url_turnitin: (fieldValues["url_turnitin"] as string) ?? null,
+    similarity_percentage: fieldValues["similarity_percentage"] != null ? String(fieldValues["similarity_percentage"]) : null,
+    ketua_sidang: ketuaSidang?.dosen?.nama_lengkap ?? null,
+    sekretaris_sidang: sekretarisSidang?.dosen?.nama_lengkap ?? null,
+    layanan_kode: pengajuan.jenis_layanan.kode ?? null,
   };
 }

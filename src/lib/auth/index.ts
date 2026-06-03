@@ -1,8 +1,8 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
-import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
+import { authConfig } from "@/lib/auth.config";
 
 async function findUserByIdentifier(identifier: string) {
   return prisma.user.findFirst({
@@ -18,8 +18,7 @@ async function findUserByIdentifier(identifier: string) {
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  adapter: PrismaAdapter(prisma),
-  session: { strategy: "database", maxAge: 7 * 24 * 60 * 60 },
+  ...authConfig,
   providers: [
     Credentials({
       credentials: {
@@ -41,16 +40,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   callbacks: {
-    async session({ session, user }) {
-      if (session.user) {
-        const dbUser = await prisma.user.findUnique({ where: { id: Number(user.id) } });
-        if (dbUser) {
-          session.user.id = String(dbUser.id);
-          (session.user as any).systemRole = dbUser.system_role;
-        }
+    ...authConfig.callbacks,
+    async jwt({ token, user }) {
+      if (user?.id) {
+        token.id = user.id;
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      if (session.user && token.id) {
+        session.user.id = token.id as string;
       }
       return session;
     },
   },
-  pages: { signIn: "/login" },
 });

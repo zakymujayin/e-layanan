@@ -29,7 +29,8 @@ export async function GET(
   }
 
   const layananKode = pengajuan.jenis_layanan.kode;
-  if (!["TA-01", "TA-02", "TA-03"].includes(layananKode)) {
+  const allServices = ["TA-01", "TA-02", "TA-03", "TA-04", "TA-05", "TA-06", "AK-01", "AK-02", "AK-03", "AK-04", "AK-05", "AK-06", "AK-07"];
+  if (!allServices.includes(layananKode)) {
     return new NextResponse("Template belum tersedia untuk layanan ini", { status: 501 });
   }
 

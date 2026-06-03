@@ -4,6 +4,37 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { validateTransition } from "./validate-transition";
 import { createPengajuanLog } from "./audit";
+import { createNotification } from "@/lib/notification";
+
+async function resolveRecipients(actorType: string, pengajuanId: number, excludeUserId: number): Promise<number[]> {
+  const users = await prisma.user.findMany({
+    where: {
+      is_active: true,
+      id: { not: excludeUserId },
+      ...(actorType === "staff_prodi"
+        ? { system_role: "staff_prodi" }
+        : actorType === "staff_akademik"
+        ? { system_role: "staff_akademik" }
+        : actorType === "kabag"
+        ? { system_role: "kabag" }
+        : actorType === "dosen_pa"
+        ? { dosen: { assignments: { some: { pengajuan_id: pengajuanId, assignment_type: "dosen_pa" } } } }
+        : actorType === "kepala_lab"
+        ? { structural_positions: { some: { position_code: "kepala_lab", is_active: true } } }
+        : actorType === "sekprodi"
+        ? { structural_positions: { some: { position_code: "sekprodi", is_active: true } } }
+        : actorType === "wakil_dekan_1"
+        ? { structural_positions: { some: { position_code: "wakil_dekan_1", is_active: true } } }
+        : actorType === "dekan"
+        ? { structural_positions: { some: { position_code: "dekan", is_active: true } } }
+        : actorType === "kaprodi"
+        ? { structural_positions: { some: { position_code: "kaprodi", is_active: true } } }
+        : {}),
+    },
+    select: { id: true },
+  });
+  return users.map(u => u.id);
+}
 
 export async function executeWorkflowAction(input: {
   pengajuanId: number;
@@ -16,7 +47,7 @@ export async function executeWorkflowAction(input: {
 
   const pengajuan = await prisma.pengajuanLayanan.findUnique({
     where: { id: input.pengajuanId },
-    include: { jenis_layanan: true },
+    include: { jenis_layanan: true, mahasiswa: true },
   });
   if (!pengajuan) throw new Error("ERR_BUS_PROFILE_NOT_FOUND: Pengajuan tidak ditemukan");
 
@@ -28,7 +59,16 @@ export async function executeWorkflowAction(input: {
   const validation = await validateTransition(workflow.id, pengajuan.current_step_code, input.action);
 
   const fromStatus = pengajuan.status;
-  const targetStatus = validation.targetStatus;
+  let targetStatus = validation.targetStatus;
+
+  // TA-06: auto-terminate setelah revisi ke-3 ditolak (mahasiswa tidak bisa resubmit lagi)
+  if (
+    input.action === "reject_to_submitter" &&
+    pengajuan.jenis_layanan.kode === "TA-06" &&
+    pengajuan.revisi_ke >= 3
+  ) {
+    targetStatus = "terminated";
+  }
 
   let nextStepCode: string | null = null;
   if (targetStatus) {
@@ -39,14 +79,19 @@ export async function executeWorkflowAction(input: {
     nextStepCode = nextStep?.step_code ?? null;
   }
 
-  return prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx) => {
+    const updateData: any = {
+      status: (targetStatus ?? pengajuan.status) as typeof pengajuan.status,
+      current_step_code: nextStepCode,
+      updated_at: new Date(),
+    };
+
+    if (targetStatus === "selesai") updateData.completed_at = new Date();
+    if (targetStatus === "terminated") updateData.terminated_at = new Date();
+
     const updated = await tx.pengajuanLayanan.update({
       where: { id: pengajuan.id },
-      data: {
-        status: (targetStatus ?? pengajuan.status) as typeof pengajuan.status,
-        current_step_code: nextStepCode,
-        updated_at: new Date(),
-      },
+      data: updateData,
     });
 
     await createPengajuanLog(tx, {
@@ -61,4 +106,85 @@ export async function executeWorkflowAction(input: {
 
     return updated;
   });
+
+  // Fire notifications after transaction (fire-and-forget)
+  const layananNama = pengajuan.jenis_layanan.nama;
+  const mhsNama = pengajuan.mahasiswa.nama_lengkap;
+  const mhsId = pengajuan.mahasiswa_id;
+
+  if (targetStatus === "terminated") {
+    createNotification({
+      user_id: mhsId,
+      title: `Pengajuan ${layananNama} Ditutup`,
+      message: `Pengajuan telah ditutup karena melebihi batas maksimal revisi. Hubungi kepala laboratorium untuk informasi lebih lanjut.`,
+      severity: "urgent",
+      entity_type: "pengajuan",
+      entity_id: pengajuan.id,
+    }).catch(() => {});
+  } else if (input.action === "reject_to_submitter") {
+    const alasan = input.data?.alasan as string | undefined;
+    createNotification({
+      user_id: mhsId,
+      title: `Pengajuan ${layananNama} Dikembalikan`,
+      message: `Pengajuan perlu direvisi.${alasan ? ` Alasan: ${alasan}` : ""}`,
+      severity: "warning",
+      entity_type: "pengajuan",
+      entity_id: pengajuan.id,
+    }).catch(() => {});
+  }
+
+  if (input.action === "reject_to_step" && targetStatus) {
+    const alasan = input.data?.alasan as string | undefined;
+    const targetStepInfo = await prisma.workflowStep.findFirst({
+      where: { workflow_definition_id: workflow.id, status_code: targetStatus },
+      select: { actor_type: true },
+    });
+    if (targetStepInfo?.actor_type) {
+      const recipients = await resolveRecipients(targetStepInfo.actor_type, pengajuan.id, userId);
+      for (const uid of recipients) {
+        createNotification({
+          user_id: uid,
+          title: `Pengajuan ${layananNama} Dikembalikan`,
+          message: `Pengajuan dari ${mhsNama} dikembalikan ke Anda.${alasan ? ` Alasan: ${alasan}` : ""}`,
+          severity: "warning",
+          entity_type: "pengajuan",
+          entity_id: pengajuan.id,
+        }).catch(() => {});
+      }
+    }
+  }
+
+  if (input.action === "sign" && targetStatus === "selesai") {
+    createNotification({
+      user_id: mhsId,
+      title: `Pengajuan Selesai`,
+      message: `${layananNama} telah disetujui. Dokumen final siap didownload.`,
+      severity: "success",
+      entity_type: "pengajuan",
+      entity_id: pengajuan.id,
+    }).catch(() => {});
+  }
+
+  if ((input.action === "approve" || input.action === "select_judul") && nextStepCode) {
+    const nextStepInfo = await prisma.workflowStep.findFirst({
+      where: { step_code: nextStepCode },
+      select: { actor_type: true },
+    });
+    if (nextStepInfo?.actor_type) {
+      const recipients = await resolveRecipients(nextStepInfo.actor_type, pengajuan.id, userId);
+      for (const uid of recipients) {
+        createNotification({
+          user_id: uid,
+          title: `Pengajuan ${layananNama}`,
+          message: `Pengajuan dari ${mhsNama} menunggu tindakan Anda.`,
+          severity: "info",
+          entity_type: "pengajuan",
+          entity_id: pengajuan.id,
+        }).catch(() => {});
+      }
+    }
+  }
+
+  return result;
+
 }

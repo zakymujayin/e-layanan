@@ -2,24 +2,26 @@ import fs from "fs/promises";
 import path from "path";
 import type { StorageProvider } from "./types";
 
-const STORAGE_BASE = process.env.STORAGE_PATH || "storage";
+const STORAGE_DIR = process.env.STORAGE_PATH ?? "storage";
+
+function storagePath(...segments: string[]) {
+  return path.join(/*turbopackIgnore: true*/ process.cwd(), STORAGE_DIR, ...segments);
+}
 
 export class LocalStorageProvider implements StorageProvider {
   async upload(destPath: string, buffer: Buffer, _mimeType: string): Promise<string> {
-    const fullPath = path.join(STORAGE_BASE, destPath);
+    const fullPath = storagePath(destPath);
     await fs.mkdir(path.dirname(fullPath), { recursive: true });
     await fs.writeFile(fullPath, buffer);
     return destPath;
   }
 
   async download(filePath: string): Promise<Buffer> {
-    const fullPath = path.join(STORAGE_BASE, filePath);
-    return fs.readFile(fullPath);
+    return fs.readFile(storagePath(filePath));
   }
 
   async delete(filePath: string): Promise<void> {
-    const fullPath = path.join(STORAGE_BASE, filePath);
-    await fs.unlink(fullPath).catch(() => {});
+    await fs.unlink(storagePath(filePath)).catch(() => {});
   }
 
   getServeUrl(filePath: string): string {

@@ -1,0 +1,14 @@
+User-agent: *
+Disallow: /api/
+Disallow: /admin/
+Disallow: /profil/
+Disallow: /pengajuan/
+Disallow: /arsip/
+Disallow: /surat-saya/
+Disallow: /dashboard/
+
+Allow: /verifikasi
+Allow: /login
+Allow: /register
+
+Sitemap: /sitemap.xml
