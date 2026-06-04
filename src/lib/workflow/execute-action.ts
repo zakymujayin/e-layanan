@@ -6,6 +6,59 @@ import { validateTransition } from "./validate-transition";
 import { createPengajuanLog } from "./audit";
 import { createNotification } from "@/lib/notification";
 
+async function verifyActorForStep(
+  userId: number,
+  actorType: string,
+  pengajuanId: number
+): Promise<void> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { system_role: true, dosen_id: true },
+  });
+  if (!user) throw new Error("ERR_AUTH_NOT_AUTHENTICATED");
+  if (user.system_role === "super_admin") return;
+
+  switch (actorType) {
+    case "staff_prodi":
+      if (user.system_role !== "staff_prodi") throw new Error("ERR_AUTH_INSUFFICIENT_ROLE: Hanya staff prodi");
+      return;
+    case "staff_akademik":
+      if (user.system_role !== "staff_akademik") throw new Error("ERR_AUTH_INSUFFICIENT_ROLE: Hanya staff akademik");
+      return;
+    case "kabag":
+      if (user.system_role !== "kabag") throw new Error("ERR_AUTH_INSUFFICIENT_ROLE: Hanya kabag");
+      return;
+    case "dosen_pa": {
+      if (!user.dosen_id) throw new Error("ERR_AUTH_INSUFFICIENT_ROLE: Hanya dosen PA");
+      const data = await prisma.pengajuanData.findFirst({
+        where: { pengajuan_id: pengajuanId },
+        select: { field_values: true },
+      });
+      const fv = (data?.field_values as Record<string, unknown>) ?? {};
+      if (Number(fv.pa_dosen_id) !== user.dosen_id) {
+        throw new Error("ERR_AUTH_NOT_ASSIGNED: Anda bukan PA pengajuan ini");
+      }
+      return;
+    }
+    case "kaprodi":
+    case "sekprodi":
+    case "wakil_dekan_1":
+    case "dekan":
+    case "kepala_lab": {
+      if (user.system_role === actorType) return;
+      if (user.dosen_id) {
+        const pos = await prisma.structuralPosition.count({
+          where: { dosen_id: user.dosen_id, position_code: actorType as any, is_active: true },
+        });
+        if (pos > 0) return;
+      }
+      throw new Error(`ERR_AUTH_INSUFFICIENT_ROLE: Hanya ${actorType.replace(/_/g, " ")}`);
+    }
+    default:
+      return; // unknown actor type — allow (forward compatibility)
+  }
+}
+
 async function resolveRecipients(actorType: string, pengajuanId: number, excludeUserId: number): Promise<number[]> {
   const users = await prisma.user.findMany({
     where: {
@@ -57,6 +110,8 @@ export async function executeWorkflowAction(input: {
   if (!workflow) throw new Error("ERR_BUS_INVALID_STATE_TRANSITION: Workflow tidak ditemukan");
 
   const validation = await validateTransition(workflow.id, pengajuan.current_step_code, input.action);
+
+  await verifyActorForStep(userId, validation.step.actor_type, input.pengajuanId);
 
   const fromStatus = pengajuan.status;
   let targetStatus = validation.targetStatus;
