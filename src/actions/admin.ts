@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
+import { encrypt } from "@/lib/crypto";
 
 async function requireAdmin() {
   const session = await auth();
@@ -136,7 +137,13 @@ export async function updateConfig(formData: FormData) {
     { key: "smtp_host", value: formData.get("smtp_host") as string },
     { key: "smtp_port", value: formData.get("smtp_port") as string },
     { key: "smtp_user", value: formData.get("smtp_user") as string },
-    { key: "smtp_pass", value: formData.get("smtp_pass") as string },
+    {
+      key: "smtp_pass",
+      value: (() => {
+        const pass = formData.get("smtp_pass") as string;
+        return pass && pass.length > 0 ? encrypt(pass) : pass;
+      })(),
+    },
   ];
 
   for (const entry of entries) {
