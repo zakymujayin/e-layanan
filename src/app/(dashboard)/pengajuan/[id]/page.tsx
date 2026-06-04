@@ -18,7 +18,13 @@ import { NilaiMunaqasyahInput } from "@/components/workflow/NilaiMunaqasyahInput
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
-export default async function PengajuanDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function PengajuanDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams?: Promise<{ versi?: string }>;
+}) {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
   const userId = Number(session.user.id);
@@ -38,6 +44,19 @@ export default async function PengajuanDetailPage({ params }: { params: Promise<
 
   const canAccess = await canAccessPengajuan(userId, pengajuan.id);
   if (!canAccess) notFound();
+
+  // Fetch version history
+  const versions = await prisma.pengajuanVersi.findMany({
+    where: { pengajuan_id: pengajuan.id },
+    orderBy: { versi_ke: "asc" },
+    select: { versi_ke: true, data_snapshot: true, dibuat_pada: true },
+  });
+
+  const sp = searchParams ? await searchParams : {};
+  const selectedVersi = sp.versi ? Number(sp.versi) : null;
+  const activeSnapshot = selectedVersi
+    ? (versions.find(v => v.versi_ke === selectedVersi)?.data_snapshot as Record<string, unknown> | null ?? null)
+    : null;
 
   const currentStep = pengajuan.current_step_code
     ? await prisma.workflowStep.findFirst({
@@ -101,8 +120,51 @@ export default async function PengajuanDetailPage({ params }: { params: Promise<
         <ProgressBar workflowDefinitionId={pengajuan.workflow_definition_id} currentStepCode={pengajuan.current_step_code} />
       </div>
 
+      {versions.length > 1 && (
+        <div className="flex items-center gap-2 text-sm flex-wrap">
+          <span className="text-xs text-muted-foreground">Versi:</span>
+          {versions.map(v => (
+            <Link
+              key={v.versi_ke}
+              href={`/pengajuan/${pengajuan.id}?versi=${v.versi_ke}`}
+              className={`px-2 py-0.5 rounded text-xs border transition-colors ${
+                selectedVersi === v.versi_ke
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "hover:bg-muted border-border"
+              }`}
+            >
+              v{v.versi_ke}
+            </Link>
+          ))}
+          {selectedVersi && (
+            <Link
+              href={`/pengajuan/${pengajuan.id}`}
+              className="text-xs text-muted-foreground hover:underline"
+            >
+              (lihat terkini)
+            </Link>
+          )}
+        </div>
+      )}
+
       <div className="rounded-lg border p-4">
         <h3 className="mb-3 font-semibold">Data Pengajuan</h3>
+        {activeSnapshot && (
+          <div className="rounded-lg border border-dashed bg-muted/30 p-4 mb-4">
+            <p className="text-xs font-medium text-muted-foreground mb-2">
+              Data Versi {selectedVersi} (baca saja)
+            </p>
+            <div className="space-y-1 text-sm">
+              {Object.entries(activeSnapshot)
+                .filter(([, v]) => v !== null && v !== undefined && v !== "")
+                .map(([k, v]) => (
+                  <p key={k} className="text-muted-foreground">
+                    <span className="font-medium">{k.replace(/_/g, " ")}:</span> {String(v)}
+                  </p>
+                ))}
+            </div>
+          </div>
+        )}
         {fieldValues && (
           <div className="space-y-1 text-sm">
             {isAk && akFields.map(([k, v]) => (
