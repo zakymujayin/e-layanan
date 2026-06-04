@@ -1,6 +1,7 @@
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
+import { IdleLogout } from "@/components/layout/IdleLogout";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
@@ -27,6 +28,7 @@ export default async function DashboardLayout({
 
   return (
     <SidebarProvider>
+      <IdleLogout />
       <AppSidebar systemRole={user.system_role} />
       <main className="flex flex-1 flex-col">
         <Header userName={userName} />

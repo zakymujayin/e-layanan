@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Suspense } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { IdleBanner } from "@/components/auth/IdleBanner";
 import Link from "next/link";
 import { Eye, EyeOff } from "lucide-react";
 
@@ -52,56 +54,61 @@ export default function LoginPage() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="identifier">Email / NIM / NIDN / NIP</Label>
-            <Input
-              id="identifier"
-              name="identifier"
-              placeholder="221360001"
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <div className="relative">
+        <div className="space-y-4">
+          <Suspense fallback={null}>
+            <IdleBanner />
+          </Suspense>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="identifier">Email / NIM / NIDN / NIP</Label>
               <Input
-                id="password"
-                name="password"
-                type={showPassword ? "text" : "password"}
+                id="identifier"
+                name="identifier"
+                placeholder="221360001"
                 required
-                className="pr-10"
               />
-              <button
-                type="button"
-                onClick={() => setShowPassword(v => !v)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                tabIndex={-1}
-                aria-label={showPassword ? "Sembunyikan password" : "Tampilkan password"}
-              >
-                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
             </div>
-          </div>
-          {error && <p className="text-sm text-destructive">{error}</p>}
-          <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? "Masuk..." : "Masuk"}
-          </Button>
-          <div className="text-center text-sm">
-            <Link
-              href="/lupa-password"
-              className="text-muted-foreground hover:underline"
-            >
-              Lupa Password?
-            </Link>
-          </div>
-          <div className="text-center text-sm">
-            <span className="text-muted-foreground">Belum punya akun? </span>
-            <Link href="/register" className="text-primary hover:underline">
-              Daftar
-            </Link>
-          </div>
-        </form>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  required
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(v => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  tabIndex={-1}
+                  aria-label={showPassword ? "Sembunyikan password" : "Tampilkan password"}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+            {error && <p className="text-sm text-destructive">{error}</p>}
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? "Masuk..." : "Masuk"}
+            </Button>
+            <div className="text-center text-sm">
+              <Link
+                href="/lupa-password"
+                className="text-muted-foreground hover:underline"
+              >
+                Lupa Password?
+              </Link>
+            </div>
+            <div className="text-center text-sm">
+              <span className="text-muted-foreground">Belum punya akun? </span>
+              <Link href="/register" className="text-primary hover:underline">
+                Daftar
+              </Link>
+            </div>
+          </form>
+        </div>
       </CardContent>
     </Card>
   );
