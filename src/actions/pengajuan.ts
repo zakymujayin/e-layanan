@@ -105,7 +105,7 @@ export async function submitPengajuanTA01(formData: FormData) {
   });
 
   const dokumenIds = (formData.get("dokumen_ids") as string)?.split(",").filter(Boolean).map(Number) ?? [];
-  if (dokumenIds.length > 0) await linkDokumenToPengajuan(dokumenIds, pengajuan.id);
+  if (dokumenIds.length > 0) await linkDokumenToPengajuan(dokumenIds, pengajuan.id, userId);
 
   await reserveNomorSurat(pengajuan.id).catch(() => {});
   notifyFirstApprover(pengajuan.id, layanan.nama, mhs.nama_lengkap, firstStep.actor_type).catch(() => {});
@@ -209,7 +209,7 @@ export async function submitPengajuanTA02(formData: FormData) {
   });
 
   const dokumenIdsTA02 = (formData.get("dokumen_ids") as string)?.split(",").filter(Boolean).map(Number) ?? [];
-  if (dokumenIdsTA02.length > 0) await linkDokumenToPengajuan(dokumenIdsTA02, pengajuan.id);
+  if (dokumenIdsTA02.length > 0) await linkDokumenToPengajuan(dokumenIdsTA02, pengajuan.id, userId);
 
   await reserveNomorSurat(pengajuan.id).catch(() => {});
   notifyFirstApprover(pengajuan.id, layanan.nama, mhs.nama_lengkap, firstStep.actor_type).catch(() => {});
@@ -315,7 +315,7 @@ export async function submitPengajuanTA03(formData: FormData) {
   });
 
   const dokumenIdsTA03 = (formData.get("dokumen_ids") as string)?.split(",").filter(Boolean).map(Number) ?? [];
-  if (dokumenIdsTA03.length > 0) await linkDokumenToPengajuan(dokumenIdsTA03, pengajuan.id);
+  if (dokumenIdsTA03.length > 0) await linkDokumenToPengajuan(dokumenIdsTA03, pengajuan.id, userId);
 
   await reserveNomorSurat(pengajuan.id).catch(() => {});
   notifyFirstApprover(pengajuan.id, layanan.nama, mhs.nama_lengkap, firstStep.actor_type).catch(() => {});
@@ -444,7 +444,7 @@ export async function submitPengajuanAK(kode: string, formData: FormData) {
   });
 
   const dokumenIdsAK = (formData.get("dokumen_ids") as string)?.split(",").filter(Boolean).map(Number) ?? [];
-  if (dokumenIdsAK.length > 0) await linkDokumenToPengajuan(dokumenIdsAK, pengajuan.id);
+  if (dokumenIdsAK.length > 0) await linkDokumenToPengajuan(dokumenIdsAK, pengajuan.id, userId);
 
   await reserveNomorSurat(pengajuan.id).catch(() => {});
   notifyFirstApprover(pengajuan.id, layanan.nama, mhs.nama_lengkap, firstStep.actor_type).catch(() => {});
@@ -530,7 +530,7 @@ export async function submitPengajuanTA04(formData: FormData) {
   });
 
   const dokumenIdsTA04 = (formData.get("dokumen_ids") as string)?.split(",").filter(Boolean).map(Number) ?? [];
-  if (dokumenIdsTA04.length > 0) await linkDokumenToPengajuan(dokumenIdsTA04, pengajuan.id);
+  if (dokumenIdsTA04.length > 0) await linkDokumenToPengajuan(dokumenIdsTA04, pengajuan.id, userId);
 
   await reserveNomorSurat(pengajuan.id).catch(() => {});
   notifyFirstApprover(pengajuan.id, layanan.nama, mhs.nama_lengkap, firstStep.actor_type).catch(() => {});
@@ -621,7 +621,7 @@ export async function submitPengajuanTA05(formData: FormData) {
   });
 
   const dokumenIdsTA05 = (formData.get("dokumen_ids") as string)?.split(",").filter(Boolean).map(Number) ?? [];
-  if (dokumenIdsTA05.length > 0) await linkDokumenToPengajuan(dokumenIdsTA05, pengajuan.id);
+  if (dokumenIdsTA05.length > 0) await linkDokumenToPengajuan(dokumenIdsTA05, pengajuan.id, userId);
 
   await reserveNomorSurat(pengajuan.id).catch(() => {});
   notifyFirstApprover(pengajuan.id, layanan.nama, mhs.nama_lengkap, firstStep.actor_type).catch(() => {});
@@ -715,7 +715,7 @@ export async function submitPengajuanTA06(formData: FormData) {
   });
 
   const dokumenIdsTA06 = (formData.get("dokumen_ids") as string)?.split(",").filter(Boolean).map(Number) ?? [];
-  if (dokumenIdsTA06.length > 0) await linkDokumenToPengajuan(dokumenIdsTA06, pengajuan.id);
+  if (dokumenIdsTA06.length > 0) await linkDokumenToPengajuan(dokumenIdsTA06, pengajuan.id, userId);
 
   await reserveNomorSurat(pengajuan.id).catch(() => {});
   notifyFirstApprover(pengajuan.id, layanan.nama, mhs.nama_lengkap, firstStep.actor_type).catch(() => {});
@@ -782,7 +782,7 @@ export async function resubmitTA06(pengajuanId: number, formData: FormData) {
   });
 
   const dokumenIdsResubmit = (formData.get("dokumen_ids") as string)?.split(",").filter(Boolean).map(Number) ?? [];
-  if (dokumenIdsResubmit.length > 0) await linkDokumenToPengajuan(dokumenIdsResubmit, pengajuanId);
+  if (dokumenIdsResubmit.length > 0) await linkDokumenToPengajuan(dokumenIdsResubmit, pengajuanId, userId);
 
   redirect(`/pengajuan/${pengajuanId}`);
 }

@@ -64,8 +64,22 @@ export async function saveUploadedFile(
   return { id: dokumen.id, file_path: filePath, file_name: file.name, serve_url: serveUrl, size: file.size };
 }
 
-export async function linkDokumenToPengajuan(dokumenIds: number[], pengajuanId: number) {
+export async function linkDokumenToPengajuan(
+  dokumenIds: number[],
+  pengajuanId: number,
+  uploadedBy: number
+) {
   if (dokumenIds.length === 0) return;
+
+  const owned = await prisma.pengajuanDokumen.findMany({
+    where: { id: { in: dokumenIds } },
+    select: { id: true, di_upload_oleh: true },
+  });
+
+  const unauthorized = owned.filter(d => d.di_upload_oleh !== uploadedBy);
+  if (unauthorized.length > 0) {
+    throw new Error("ERR_AUTH_INSUFFICIENT_ROLE: Satu atau lebih dokumen bukan milik Anda");
+  }
 
   await prisma.$transaction(
     dokumenIds.map(id =>
