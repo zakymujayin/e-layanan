@@ -842,6 +842,88 @@ export async function resubmitTA06(pengajuanId: number, formData: FormData) {
 }
 
 // ============================================================
+// Generic Resubmit (all services with revision_required)
+// ============================================================
+
+export async function resubmitPengajuan(pengajuanId: number, formData: FormData) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("ERR_AUTH_NOT_AUTHENTICATED");
+  const userId = Number(session.user.id);
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    include: { mahasiswa: true },
+  });
+  if (!user?.mahasiswa) throw new Error("ERR_AUTH_INSUFFICIENT_ROLE: Hanya mahasiswa");
+
+  const pengajuan = await prisma.pengajuanLayanan.findUnique({
+    where: { id: pengajuanId },
+    include: { pengajuan_data: true, jenis_layanan: true },
+  });
+  if (!pengajuan) throw new Error("ERR_BUS_PROFILE_NOT_FOUND: Pengajuan tidak ditemukan");
+  if (pengajuan.mahasiswa_id !== user.mahasiswa.id) throw new Error("ERR_AUTH_INSUFFICIENT_ROLE: Bukan pengajuan Anda");
+  if (pengajuan.status !== "revision_required") throw new Error("ERR_BUS_INVALID_STATE_TRANSITION: Pengajuan tidak dalam status revisi");
+
+  const firstStep = await prisma.workflowStep.findFirst({
+    where: { workflow_definition_id: pengajuan.workflow_definition_id },
+    orderBy: { step_order: "asc" },
+  });
+  if (!firstStep) throw new Error("Workflow step tidak ditemukan");
+
+  const versiCount = await prisma.pengajuanVersi.count({ where: { pengajuan_id: pengajuanId } });
+  const currentValues = (pengajuan.pengajuan_data?.field_values as Record<string, unknown>) ?? {};
+
+  const updatedFields: Record<string, unknown> = {};
+  for (const [key, val] of formData.entries()) {
+    if (key !== "dokumen_ids" && val && typeof val === "string" && val.trim()) {
+      updatedFields[key] = val.trim();
+    }
+  }
+  const newFieldValues = { ...currentValues, ...updatedFields };
+
+  await prisma.$transaction([
+    prisma.pengajuanData.upsert({
+      where: { pengajuan_id: pengajuanId },
+      update: { field_values: newFieldValues as any },
+      create: { pengajuan_id: pengajuanId, field_values: newFieldValues as any },
+    }),
+    prisma.pengajuanVersi.create({
+      data: {
+        pengajuan_id: pengajuanId,
+        versi_ke: versiCount + 1,
+        data_snapshot: newFieldValues as any,
+        dokumen_snapshot: {},
+        dibuat_oleh: userId,
+      },
+    }),
+    prisma.pengajuanLayanan.update({
+      where: { id: pengajuanId },
+      data: {
+        status: firstStep.status_code as any,
+        current_step_code: firstStep.step_code,
+        revisi_ke: (pengajuan.revisi_ke ?? 0) + 1,
+      },
+    }),
+    prisma.pengajuanLog.create({
+      data: {
+        pengajuan_id: pengajuanId,
+        action_code: "resubmit",
+        performed_by: userId,
+        from_status: "revision_required",
+        to_status: firstStep.status_code,
+        metadata: { versi: versiCount + 1 },
+      },
+    }),
+  ]);
+
+  const dokumenIds = (formData.get("dokumen_ids") as string)?.split(",").filter(Boolean).map(Number) ?? [];
+  if (dokumenIds.length > 0) await linkDokumenToPengajuan(dokumenIds, pengajuanId, userId);
+
+  notifyFirstApprover(pengajuanId, pengajuan.jenis_layanan.nama, user.mahasiswa.nama_lengkap, firstStep.actor_type).catch(() => {});
+  redirect(`/pengajuan/${pengajuanId}`);
+}
+
+// ============================================================
 // TA-04 Penguji + SetJadwal helpers
 // ============================================================
 

@@ -2,55 +2,83 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { resubmitTA06 } from "@/actions/pengajuan";
+import { resubmitTA06, resubmitPengajuan } from "@/actions/pengajuan";
 
-export function ResubmitForm({ pengajuanId }: { pengajuanId: number }) {
+interface ResubmitFormProps {
+  pengajuanId: number;
+  layananKode: string;
+}
+
+export function ResubmitForm({ pengajuanId, layananKode }: ResubmitFormProps) {
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const isTA06 = layananKode === "TA-06";
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setIsLoading(true);
+    setLoading(true);
     try {
-      const formData = new FormData(e.currentTarget);
-      await resubmitTA06(pengajuanId, formData);
+      const fd = new FormData(e.currentTarget);
+      if (isTA06) {
+        await resubmitTA06(pengajuanId, fd);
+      } else {
+        await resubmitPengajuan(pengajuanId, fd);
+      }
+      toast.success("Pengajuan berhasil diajukan ulang");
       router.refresh();
     } catch (err: any) {
-      toast.error(err.message || "Gagal resubmit");
-      setIsLoading(false);
+      toast.error(err.message ?? "Gagal mengajukan ulang");
+    } finally {
+      setLoading(false);
     }
   }
 
   return (
-    <Card>
-      <CardHeader><CardTitle>Upload Ulang (Revisi Turnitin)</CardTitle></CardHeader>
-      <CardContent className="space-y-4">
-        <p className="text-sm text-muted-foreground">
-          Revisi draft skripsi Anda untuk menurunkan similarity. Maksimal 3x revisi.
-        </p>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label>Submission ID Turnitin (baru)</Label>
-            <Input name="submission_id_turnitin" placeholder="ID baru dari Turnitin" required />
-          </div>
-          <div className="space-y-2">
-            <Label>URL Turnitin (baru)</Label>
-            <Input name="url_turnitin" type="url" placeholder="https://..." required />
-          </div>
-          <div className="space-y-2">
-            <Label>Similarity Percentage (%)</Label>
-            <Input name="similarity_percentage" type="number" min="0" max="100" placeholder="Diharapkan lebih rendah" required />
-          </div>
-          <Button type="submit" disabled={isLoading}>
-            {isLoading ? "Mengirim..." : "Upload Ulang"}
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+    <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950/20">
+      <h3 className="mb-2 font-semibold text-amber-800 dark:text-amber-200">Ajukan Ulang</h3>
+      <p className="mb-3 text-sm text-amber-700 dark:text-amber-300">
+        Perbaiki sesuai catatan di timeline aktivitas di atas, lalu submit ulang.
+      </p>
+      <form onSubmit={handleSubmit} className="space-y-3">
+        {isTA06 && (
+          <>
+            <div>
+              <label className="block text-sm font-medium mb-1">Submission ID Turnitin</label>
+              <input
+                name="submission_id_turnitin"
+                className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">URL Turnitin</label>
+              <input
+                name="url_turnitin"
+                type="url"
+                className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Persentase Similarity (%)</label>
+              <input
+                name="similarity_percentage"
+                type="number"
+                min="0"
+                max="100"
+                defaultValue="0"
+                className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm"
+                required
+              />
+            </div>
+          </>
+        )}
+        <Button type="submit" disabled={loading} size="sm">
+          {loading ? "Memproses..." : "Ajukan Ulang"}
+        </Button>
+      </form>
+    </div>
   );
 }

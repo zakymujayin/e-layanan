@@ -192,8 +192,8 @@ export default async function PengajuanDetailPage({ params }: { params: Promise<
         <PengujiKomprehensifPicker pengajuanId={pengajuan.id} />
       )}
 
-      {kode === "TA-06" && pengajuan.status === "revision_required" && (
-        <ResubmitForm pengajuanId={pengajuan.id} />
+      {pengajuan.status === "revision_required" && (
+        <ResubmitForm pengajuanId={pengajuan.id} layananKode={kode} />
       )}
 
       {kode === "TA-05" && pengajuan.status === "pending_sekprodi" && (
