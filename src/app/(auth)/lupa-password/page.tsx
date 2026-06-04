@@ -1,44 +1,75 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { buttonVariants } from "@/components/ui/button";
-import { Mail } from "lucide-react";
-import Link from "next/link";
-import { cn } from "@/lib/utils";
-import { prisma } from "@/lib/prisma";
+"use client";
 
-export default async function LupaPasswordPage() {
-  const adminEmailConfig = await prisma.appConfig.findUnique({ where: { key: "admin_email" } }).catch(() => null);
-  const adminEmail = adminEmailConfig?.value ?? "admin@sila.local";
+import { useState } from "react";
+import { requestPasswordReset } from "@/actions/auth";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import Link from "next/link";
+
+export default function LupaPasswordPage() {
+  const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [error, setError] = useState("");
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    try {
+      await requestPasswordReset(email);
+      setSent(true);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Terjadi kesalahan");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (sent) {
+    return (
+      <div className="text-center space-y-4">
+        <h2 className="text-xl font-bold">Permintaan Diterima</h2>
+        <p className="text-sm text-muted-foreground">
+          Jika email Anda terdaftar, link reset password telah dikirim. Bila tidak menerima email
+          dalam beberapa menit, hubungi administrator sistem.
+        </p>
+        <Link href="/login" className="text-sm text-primary hover:underline">
+          ← Kembali ke login
+        </Link>
+      </div>
+    );
+  }
 
   return (
-    <Card>
-      <CardHeader className="space-y-1">
-        <div className="flex justify-center mb-2">
-          <div className="rounded-full bg-primary/10 p-3">
-            <Mail className="h-6 w-6 text-primary" />
-          </div>
-        </div>
-        <CardTitle className="text-center text-xl">Lupa Password</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4 text-center">
-        <p className="text-sm text-muted-foreground">
-          Reset password otomatis belum tersedia. Hubungi administrator SILA untuk mereset password akun Anda.
+    <div className="space-y-4">
+      <div>
+        <h2 className="text-xl font-bold">Lupa Password</h2>
+        <p className="text-sm text-muted-foreground mt-1">
+          Masukkan email akun Anda. Link reset akan dikirim jika email terdaftar.
         </p>
-        <div className="rounded-md bg-muted p-3">
-          <p className="text-xs text-muted-foreground">Email Administrator</p>
-          <a
-            href={`mailto:${adminEmail}`}
-            className="text-sm font-medium text-primary hover:underline"
-          >
-            {adminEmail}
-          </a>
+      </div>
+      <form onSubmit={handleSubmit} className="space-y-3">
+        <div className="space-y-1">
+          <Label htmlFor="email">Email</Label>
+          <Input
+            id="email"
+            type="email"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            required
+            placeholder="email@uinbanten.ac.id"
+          />
         </div>
-        <p className="text-xs text-muted-foreground">
-          Sertakan nama lengkap, NIM/NIDN/NIP, dan alasan reset password saat menghubungi admin.
+        {error && <p className="text-sm text-destructive">{error}</p>}
+        <Button type="submit" disabled={loading} className="w-full">
+          {loading ? "Memproses..." : "Kirim Link Reset"}
+        </Button>
+        <p className="text-center text-sm">
+          <Link href="/login" className="text-primary hover:underline">← Kembali ke login</Link>
         </p>
-        <Link href="/login" className={cn(buttonVariants({ variant: "outline" }), "w-full justify-center")}>
-          ← Kembali ke Login
-        </Link>
-      </CardContent>
-    </Card>
+      </form>
+    </div>
   );
 }

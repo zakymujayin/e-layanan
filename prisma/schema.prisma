@@ -24,6 +24,9 @@ model User {
   pegawai_id   Int? @unique
   mahasiswa_id Int? @unique
 
+  password_reset_token   String?   @unique @map("password_reset_token")
+  password_reset_expires DateTime? @map("password_reset_expires")
+
   dosen         Dosen?         @relation(fields: [dosen_id], references: [id])
   pegawai       Pegawai?       @relation(fields: [pegawai_id], references: [id])
   mahasiswa     Mahasiswa?     @relation(fields: [mahasiswa_id], references: [id])
@@ -42,6 +45,10 @@ enum SystemRole {
   staff_akademik
   kabag
   super_admin
+  wakil_dekan_1
+  dekan
+  kaprodi
+  sekprodi
 }
 
 model Dosen {
