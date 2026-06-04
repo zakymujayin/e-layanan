@@ -4,6 +4,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
+import { createNotification } from "@/lib/notification";
 
 const NilaiSemproSchema = z.object({
   nilai: z.number().min(0).max(100, "Nilai harus 0-100"),
@@ -70,6 +71,21 @@ export async function inputNilaiSempro(
       where: { pengajuan_id: pengajuanId },
       data: { nilai_akhir: avgNilai },
     });
+
+    const pengajuanForNotif = await prisma.pengajuanLayanan.findUnique({
+      where: { id: pengajuanId },
+      select: { mahasiswa_id: true },
+    });
+    if (pengajuanForNotif) {
+      createNotification({
+        user_id: pengajuanForNotif.mahasiswa_id,
+        title: "Hasil Seminar Proposal",
+        message: `Kedua penguji telah memberikan penilaian. Hasil: ${keduaLayak ? "LAYAK" : "TIDAK LAYAK"}.`,
+        severity: keduaLayak ? "success" : "warning",
+        entity_type: "pengajuan",
+        entity_id: pengajuanId,
+      }).catch(() => {});
+    }
   }
 
   revalidatePath(`/pengajuan/${pengajuanId}`);
@@ -135,6 +151,21 @@ export async function inputNilaiKomprehensif(
       where: { pengajuan_id: pengajuanId },
       data: { nilai_akhir: p, yudisium: huruf, keputusan: finalKeputusan },
     });
+
+    const pengajuanForNotif = await prisma.pengajuanLayanan.findUnique({
+      where: { id: pengajuanId },
+      select: { mahasiswa_id: true },
+    });
+    if (pengajuanForNotif) {
+      createNotification({
+        user_id: pengajuanForNotif.mahasiswa_id,
+        title: "Hasil Ujian Komprehensif",
+        message: `Penguji telah memberikan penilaian. Hasil: ${keduaLulus ? "LULUS" : "TIDAK LULUS"}.`,
+        severity: keduaLulus ? "success" : "warning",
+        entity_type: "pengajuan",
+        entity_id: pengajuanId,
+      }).catch(() => {});
+    }
   }
 
   revalidatePath(`/pengajuan/${pengajuanId}`);
@@ -213,4 +244,19 @@ export async function inputNilaiMunaqasyah(
   });
 
   revalidatePath(`/pengajuan/${pengajuanId}`);
+
+  const pengajuanForNotif = await prisma.pengajuanLayanan.findUnique({
+    where: { id: pengajuanId },
+    select: { mahasiswa_id: true },
+  });
+  if (pengajuanForNotif) {
+    createNotification({
+      user_id: pengajuanForNotif.mahasiswa_id,
+      title: "Hasil Ujian Munaqasyah",
+      message: `Nilai telah diinput. Hasil: ${keputusan === "lulus" ? "LULUS" : "TIDAK LULUS"}${yudisium ? ` — ${yudisium.replace(/_/g, " ")}` : ""}.`,
+      severity: keputusan === "lulus" ? "success" : "warning",
+      entity_type: "pengajuan",
+      entity_id: pengajuanId,
+    }).catch(() => {});
+  }
 }
