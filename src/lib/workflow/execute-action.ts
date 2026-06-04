@@ -116,6 +116,17 @@ export async function executeWorkflowAction(input: {
   const fromStatus = pengajuan.status;
   let targetStatus = validation.targetStatus;
 
+  // For reject_to_step: WD1/Dekan selects target step from action_config.allow_target
+  if (input.action === "reject_to_step" && input.data?.target_status) {
+    const actionConfig = validation.actionDef.actionConfig as { allow_target?: string[] } | null;
+    const allowTarget = actionConfig?.allow_target ?? [];
+    const requestedTarget = input.data.target_status as string;
+    if (allowTarget.length > 0 && !allowTarget.includes(requestedTarget)) {
+      throw new Error("ERR_BUS_INVALID_STATE_TRANSITION: Target step pengembalian tidak diizinkan");
+    }
+    targetStatus = requestedTarget;
+  }
+
   // TA-06: auto-terminate setelah revisi ke-3 ditolak (mahasiswa tidak bisa resubmit lagi)
   if (
     input.action === "reject_to_submitter" &&
