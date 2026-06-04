@@ -32,7 +32,7 @@ export async function GET(
 
   const canAccess = await canAccessPengajuan(userId, pengajuanId);
   if (!canAccess) {
-    return new NextResponse("Forbidden", { status: 403 });
+    return new NextResponse("Pengajuan tidak ditemukan", { status: 404 });
   }
 
   const layananKode = pengajuan.jenis_layanan.kode;

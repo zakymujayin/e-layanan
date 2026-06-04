@@ -22,9 +22,10 @@ export function requireScope(user: { systemRole: string }, resource: { fakultasI
 
 export async function canAccessPengajuan(
   userId: number,
-  pengajuanId: number
+  pengajuanId: number,
+  preloadedUser?: { system_role: string; mahasiswa_id: number | null; dosen_id: number | null }
 ): Promise<boolean> {
-  const user = await prisma.user.findUnique({
+  const user = preloadedUser ?? await prisma.user.findUnique({
     where: { id: userId },
     select: { system_role: true, mahasiswa_id: true, dosen_id: true },
   });
@@ -49,6 +50,11 @@ export async function canAccessPengajuan(
     case "staff_akademik":
     case "kabag":
       return pengajuan.scope_level === "fakultas";
+    case "wakil_dekan_1":
+    case "dekan":
+    case "kaprodi":
+    case "sekprodi":
+      return true;
     case "dosen": {
       if (!user.dosen_id) return false;
       const positions = await prisma.structuralPosition.findMany({
