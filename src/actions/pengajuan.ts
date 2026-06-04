@@ -1,5 +1,6 @@
 "use server";
 
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
@@ -7,6 +8,15 @@ import { executeWorkflowAction } from "@/lib/workflow/execute-action";
 import { linkDokumenToPengajuan } from "@/lib/upload";
 import { reserveNomorSurat } from "@/lib/document/numbering";
 import { notifyFirstApprover } from "@/lib/notification";
+
+const TA01Schema = z.object({
+  judul_1: z.string().min(5, "Judul 1 minimal 5 karakter"),
+  judul_2: z.string().min(5, "Judul 2 minimal 5 karakter"),
+  judul_3: z.string().min(5, "Judul 3 minimal 5 karakter"),
+  judul_4: z.string().min(1).nullish(),
+  judul_5: z.string().min(1).nullish(),
+  pa_dosen_id: z.coerce.number().int().positive("Pilih Pembimbing Akademik"),
+});
 
 async function requireRole(userId: number, allowedRoles: string[]): Promise<void> {
   const user = await prisma.user.findUnique({
@@ -74,15 +84,18 @@ export async function submitPengajuanTA01(formData: FormData) {
   });
   if (!firstStep) throw new Error("Workflow step tidak ditemukan");
 
-  const judul1 = (formData.get("judul_1") as string) || "";
-  const judul2 = (formData.get("judul_2") as string) || "";
-  const judul3 = (formData.get("judul_3") as string) || "";
-  const judul4 = (formData.get("judul_4") as string) || null;
-  const judul5 = (formData.get("judul_5") as string) || null;
-  const paDosenId = Number(formData.get("pa_dosen_id"));
-
-  if (!judul1 || !judul2 || !judul3) throw new Error("ERR_VAL_MIN_ITEMS: Minimal 3 judul");
-  if (!paDosenId) throw new Error("ERR_VAL_REQUIRED_FIELD: Pilih PA");
+  const parsed = TA01Schema.safeParse({
+    judul_1: formData.get("judul_1"),
+    judul_2: formData.get("judul_2"),
+    judul_3: formData.get("judul_3"),
+    judul_4: formData.get("judul_4") || null,
+    judul_5: formData.get("judul_5") || null,
+    pa_dosen_id: formData.get("pa_dosen_id"),
+  });
+  if (!parsed.success) {
+    throw new Error(`ERR_VAL_INVALID_FORMAT: ${parsed.error.issues[0].message}`);
+  }
+  const { judul_1: judul1, judul_2: judul2, judul_3: judul3, judul_4: judul4, judul_5: judul5, pa_dosen_id: paDosenId } = parsed.data;
 
   const pengajuan = await prisma.pengajuanLayanan.create({
     data: {

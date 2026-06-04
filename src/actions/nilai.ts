@@ -1,8 +1,30 @@
 "use server";
 
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
+
+const NilaiSemproSchema = z.object({
+  nilai: z.number().min(0).max(100, "Nilai harus 0-100"),
+  catatan: z.string().max(500).default(""),
+  keputusan: z.enum(["layak", "tidak_layak"]),
+});
+
+const NilaiKomprehensifSchema = z.object({
+  nilai: z.number().min(0).max(100, "Nilai harus 0-100"),
+  catatan: z.string().max(500).default(""),
+  keputusan: z.enum(["lulus", "tidak_lulus"]),
+});
+
+const NilaiMunaqasyahSchema = z.object({
+  nilaiP1: z.number().min(0).max(100),
+  nilaiP2: z.number().min(0).max(100),
+  nilaiPenguji1: z.number().min(0).max(100),
+  nilaiPenguji2: z.number().min(0).max(100),
+  keputusan: z.enum(["lulus", "tidak_lulus"]),
+  catatan: z.string().max(500).default(""),
+});
 
 // ============================================================
 // TA-03: Seminar Proposal — 2 Penguji input nilai
@@ -24,17 +46,17 @@ export async function inputNilaiSempro(
   });
   if (!assignment) throw new Error("ERR_AUTH_NOT_ASSIGNED: Anda bukan penguji proposal ini");
 
-  if (data.nilai < 0 || data.nilai > 100) throw new Error("ERR_VAL_INVALID_FORMAT: Nilai harus 0-100");
-  if (!data.keputusan) throw new Error("ERR_VAL_REQUIRED_FIELD: Keputusan wajib diisi");
+  const validated = NilaiSemproSchema.safeParse(data);
+  if (!validated.success) throw new Error(`ERR_VAL_INVALID_FORMAT: ${validated.error.issues[0].message}`);
 
   await prisma.nilaiSidang.create({
     data: {
       pengajuan_id: pengajuanId,
       dosen_id: user.dosen.id,
       assignment_type: "penguji_proposal",
-      nilai: data.nilai,
-      catatan: data.catatan || null,
-      keputusan: data.keputusan,
+      nilai: validated.data.nilai,
+      catatan: validated.data.catatan || null,
+      keputusan: validated.data.keputusan,
     },
   });
 
@@ -87,16 +109,17 @@ export async function inputNilaiKomprehensif(
   });
   if (!assignment) throw new Error("ERR_AUTH_NOT_ASSIGNED: Anda bukan penguji komprehensif");
 
-  if (data.nilai < 0 || data.nilai > 100) throw new Error("ERR_VAL_INVALID_FORMAT: Nilai harus 0-100");
+  const validated = NilaiKomprehensifSchema.safeParse(data);
+  if (!validated.success) throw new Error(`ERR_VAL_INVALID_FORMAT: ${validated.error.issues[0].message}`);
 
   await prisma.nilaiSidang.create({
     data: {
       pengajuan_id: pengajuanId,
       dosen_id: user.dosen.id,
       assignment_type: assignment.assignment_type,
-      nilai: data.nilai,
-      catatan: data.catatan || null,
-      keputusan: data.keputusan,
+      nilai: validated.data.nilai,
+      catatan: validated.data.catatan || null,
+      keputusan: validated.data.keputusan,
     },
   });
 
@@ -161,14 +184,14 @@ export async function inputNilaiMunaqasyah(
   });
   if (!assignment) throw new Error("ERR_AUTH_NOT_ASSIGNED: Anda bukan sekretaris sidang");
 
-  const nilaiList = [data.nilaiP1, data.nilaiP2, data.nilaiPenguji1, data.nilaiPenguji2];
-  for (const n of nilaiList) {
-    if (n < 0 || n > 100) throw new Error("ERR_VAL_INVALID_FORMAT: Semua nilai harus 0-100");
-  }
+  const validated = NilaiMunaqasyahSchema.safeParse(data);
+  if (!validated.success) throw new Error(`ERR_VAL_INVALID_FORMAT: ${validated.error.issues[0].message}`);
 
+  const { nilaiP1, nilaiP2, nilaiPenguji1, nilaiPenguji2, keputusan, catatan } = validated.data;
+  const nilaiList = [nilaiP1, nilaiP2, nilaiPenguji1, nilaiPenguji2];
   const nilaiAkhir = nilaiList.reduce((s, n) => s + n, 0) / 4;
   const ipk = convertToIpk(nilaiAkhir);
-  const yudisium = data.keputusan === "lulus" ? calculateYudisium(ipk) : "";
+  const yudisium = keputusan === "lulus" ? calculateYudisium(ipk) : "";
 
   await prisma.nilaiSidang.create({
     data: {
@@ -176,16 +199,16 @@ export async function inputNilaiMunaqasyah(
       dosen_id: user.dosen.id,
       assignment_type: "sekretaris_sidang",
       nilai_per_penilai: {
-        pembimbing_1: data.nilaiP1,
-        pembimbing_2: data.nilaiP2,
-        penguji_1: data.nilaiPenguji1,
-        penguji_2: data.nilaiPenguji2,
+        pembimbing_1: nilaiP1,
+        pembimbing_2: nilaiP2,
+        penguji_1: nilaiPenguji1,
+        penguji_2: nilaiPenguji2,
       },
       nilai_akhir: nilaiAkhir,
       ipk_equivalent: ipk,
       yudisium,
-      keputusan: data.keputusan,
-      catatan: data.catatan || null,
+      keputusan,
+      catatan: catatan || null,
     },
   });
 
