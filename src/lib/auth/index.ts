@@ -3,6 +3,7 @@ import Credentials from "next-auth/providers/credentials";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { authConfig } from "@/lib/auth.config";
+import { isRateLimited } from "@/lib/rate-limit";
 
 async function findUserByIdentifier(identifier: string) {
   return prisma.user.findFirst({
@@ -25,7 +26,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         identifier: { label: "Email/NIM/NIDN/NIP", type: "text" },
         password: { label: "Password", type: "password" },
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
+        const ip =
+          (req as Request)?.headers?.get("x-forwarded-for") ??
+          (req as Request)?.headers?.get("x-real-ip") ??
+          "unknown";
+
+        if (isRateLimited(`login:${ip}`, 5, 60_000)) {
+          throw new Error("ERR_AUTH_RATE_LIMIT: Terlalu banyak percobaan login. Coba lagi dalam 1 menit.");
+        }
+
         const { identifier, password } = credentials as {
           identifier: string;
           password: string;

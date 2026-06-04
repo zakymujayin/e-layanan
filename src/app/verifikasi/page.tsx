@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { isRateLimited } from "@/lib/rate-limit";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, XCircle, ShieldCheck } from "lucide-react";
@@ -49,12 +50,17 @@ export default async function VerifikasiPage({ searchParams }: PageProps) {
   let verificationResult: Awaited<ReturnType<typeof verifyToken>> | null = null;
   let error: string | null = null;
 
+  const headersList = await headers();
+  const ip = headersList.get("x-forwarded-for") ?? headersList.get("x-real-ip") ?? "unknown";
+
   if (token) {
     try {
-      const headersList = await headers();
-      const ip = headersList.get("x-forwarded-for") ?? headersList.get("x-real-ip") ?? "unknown";
-      verificationResult = await verifyToken(token, ip);
-      if (!verificationResult) error = "Token tidak ditemukan atau tidak valid.";
+      if (isRateLimited(`verifikasi:${ip}`, 10, 60_000)) {
+        error = "Terlalu banyak percobaan. Coba lagi dalam 1 menit.";
+      } else {
+        verificationResult = await verifyToken(token, ip);
+        if (!verificationResult) error = "Token tidak ditemukan atau tidak valid.";
+      }
     } catch {
       error = "Terjadi kesalahan saat memverifikasi dokumen.";
     }
