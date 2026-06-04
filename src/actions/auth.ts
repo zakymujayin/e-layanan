@@ -96,9 +96,12 @@ export async function requestPasswordReset(email: string): Promise<void> {
     data: { password_reset_token: token, password_reset_expires: expires },
   });
 
-  const base = process.env.NEXTAUTH_URL ?? "http://localhost:3000";
-  const resetUrl = `${base}/reset-password?token=${token}`;
-  console.log(`[SILA RESET] Reset link untuk ${normalized}: ${resetUrl}`);
+  if (process.env.NODE_ENV !== "production") {
+    const base = process.env.NEXTAUTH_URL ?? "http://localhost:3000";
+    const resetUrl = `${base}/reset-password?token=${token}`;
+    console.log(`[SILA RESET DEV] Reset link untuk ${normalized}: ${resetUrl}`);
+  }
+  // Production: send via SMTP once configured in app_config
 }
 
 export async function resetPassword(token: string, newPassword: string): Promise<void> {

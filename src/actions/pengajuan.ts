@@ -886,9 +886,12 @@ export async function resubmitPengajuan(pengajuanId: number, formData: FormData)
   const versiCount = await prisma.pengajuanVersi.count({ where: { pengajuan_id: pengajuanId } });
   const currentValues = (pengajuan.pengajuan_data?.field_values as Record<string, unknown>) ?? {};
 
+  // Resubmit merges only fields already present in current values — no new keys injected
   const updatedFields: Record<string, unknown> = {};
-  for (const [key, val] of formData.entries()) {
-    if (key !== "dokumen_ids" && val && typeof val === "string" && val.trim()) {
+  for (const key of Object.keys(currentValues)) {
+    if (key === "dokumen_ids") continue;
+    const val = formData.get(key);
+    if (typeof val === "string" && val.trim()) {
       updatedFields[key] = val.trim();
     }
   }
