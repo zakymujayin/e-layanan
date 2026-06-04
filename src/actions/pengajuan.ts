@@ -358,6 +358,25 @@ const akEligibility: Record<string, AkEligibility> = {
   "AK-07": { allowedStatuses: ["aktif", "alumni"], errorMessage: "Status mahasiswa harus aktif atau alumni" },
 };
 
+const AK_ALLOWED_FIELDS: Record<string, string[]> = {
+  "AK-01": ["peruntukan", "tujuan_peruntukan"],
+  "AK-02": [
+    "peruntukan", "orang_tua_pns", "nama_orang_tua", "nip_orang_tua",
+    "pangkat_golongan", "jabatan_orang_tua", "instansi_orang_tua", "hubungan_orang_tua",
+  ],
+  "AK-03": ["peruntukan"],
+  "AK-04": [
+    "mata_kuliah", "instansi_tujuan", "pejabat_tujuan", "alamat_instansi",
+    "lokasi_observasi", "tanggal_mulai", "tanggal_selesai", "dosen_pembimbing_observasi_id",
+  ],
+  "AK-05": ["judul_penelitian", "lokasi_penelitian", "tujuan_penelitian", "tanggal_mulai", "tanggal_selesai"],
+  "AK-06": [
+    "bidang_magang", "instansi_tujuan", "alamat_instansi", "pejabat_tujuan",
+    "tanggal_mulai", "tanggal_selesai", "dosen_pembimbing_magang_id",
+  ],
+  "AK-07": ["tipe_rekomendasi", "tujuan_rekomendasi", "pihak_penerima"],
+};
+
 export async function submitPengajuanAK(kode: string, formData: FormData) {
   const session = await auth();
   if (!session?.user?.id) throw new Error("ERR_AUTH_NOT_AUTHENTICATED");
@@ -433,10 +452,12 @@ export async function submitPengajuanAK(kode: string, formData: FormData) {
   });
   if (!firstStep) throw new Error("Workflow step tidak ditemukan");
 
+  const allowed = AK_ALLOWED_FIELDS[kode] ?? [];
   const fieldValues: Record<string, unknown> = {};
-  for (const [key, val] of formData.entries()) {
-    if (val && typeof val === "string" && val.length > 0) {
-      fieldValues[key] = val;
+  for (const key of allowed) {
+    const val = formData.get(key);
+    if (val && typeof val === "string" && val.trim().length > 0) {
+      fieldValues[key] = val.trim();
     }
   }
 
