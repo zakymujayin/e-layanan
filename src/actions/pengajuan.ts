@@ -8,6 +8,26 @@ import { linkDokumenToPengajuan } from "@/lib/upload";
 import { reserveNomorSurat } from "@/lib/document/numbering";
 import { notifyFirstApprover } from "@/lib/notification";
 
+async function requireRole(userId: number, allowedRoles: string[]): Promise<void> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { system_role: true, dosen_id: true },
+  });
+  if (!user) throw new Error("ERR_AUTH_NOT_AUTHENTICATED");
+  if (user.system_role === "super_admin") return;
+
+  for (const role of allowedRoles) {
+    if (user.system_role === role) return;
+    if (user.dosen_id) {
+      const pos = await prisma.structuralPosition.count({
+        where: { dosen_id: user.dosen_id, position_code: role as any, is_active: true },
+      });
+      if (pos > 0) return;
+    }
+  }
+  throw new Error(`ERR_AUTH_INSUFFICIENT_ROLE: Hanya ${allowedRoles.join("/")} yang dapat melakukan ini`);
+}
+
 export async function submitPengajuanTA01(formData: FormData) {
   const session = await auth();
   if (!session?.user?.id) throw new Error("ERR_AUTH_NOT_AUTHENTICATED");
@@ -795,6 +815,9 @@ export async function setJadwalKomprehensif(pengajuanId: number, data: { tanggal
   const session = await auth();
   if (!session?.user?.id) throw new Error("ERR_AUTH_NOT_AUTHENTICATED");
 
+  const userId = Number(session.user.id);
+  await requireRole(userId, ["staff_prodi"]);
+
   const pengajuan = await prisma.pengajuanLayanan.findUnique({
     where: { id: pengajuanId },
     include: { pengajuan_data: true },
@@ -816,6 +839,9 @@ export async function setPengujiKomprehensif(pengajuanId: number, data: { penguj
 
   const session = await auth();
   if (!session?.user?.id) throw new Error("ERR_AUTH_NOT_AUTHENTICATED");
+
+  const userId = Number(session.user.id);
+  await requireRole(userId, ["sekprodi"]);
 
   await prisma.assignment.createMany({
     data: [
@@ -856,7 +882,10 @@ export async function setMajelisTA05(
   const session = await auth();
   if (!session?.user?.id) throw new Error("ERR_AUTH_NOT_AUTHENTICATED");
 
-  const user = await prisma.user.findUnique({ where: { id: Number(session.user.id) } });
+  const userId = Number(session.user.id);
+  await requireRole(userId, ["sekprodi"]);
+
+  const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) throw new Error("ERR_AUTH_NOT_AUTHENTICATED");
 
   const allDosenIds = [
@@ -898,6 +927,9 @@ export async function setJadwalTA03(pengajuanId: number, data: { tanggal_sidang:
   const session = await auth();
   if (!session?.user?.id) throw new Error("ERR_AUTH_NOT_AUTHENTICATED");
 
+  const userId = Number(session.user.id);
+  await requireRole(userId, ["staff_prodi"]);
+
   const pengajuan = await prisma.pengajuanLayanan.findUnique({
     where: { id: pengajuanId },
     include: { pengajuan_data: true },
@@ -919,6 +951,9 @@ export async function setPengujiTA03(pengajuanId: number, data: { penguji_1_dose
 
   const session = await auth();
   if (!session?.user?.id) throw new Error("ERR_AUTH_NOT_AUTHENTICATED");
+
+  const userId = Number(session.user.id);
+  await requireRole(userId, ["sekprodi"]);
 
   const pengajuan = await prisma.pengajuanLayanan.findUnique({
     where: { id: pengajuanId },
@@ -953,7 +988,10 @@ export async function setPembimbingTA02(
   const session = await auth();
   if (!session?.user?.id) throw new Error("ERR_AUTH_NOT_AUTHENTICATED");
 
-  const user = await prisma.user.findUnique({ where: { id: Number(session.user.id) } });
+  const userId = Number(session.user.id);
+  await requireRole(userId, ["sekprodi"]);
+
+  const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) throw new Error("ERR_AUTH_NOT_AUTHENTICATED");
 
   const pengajuan = await prisma.pengajuanLayanan.findUnique({
