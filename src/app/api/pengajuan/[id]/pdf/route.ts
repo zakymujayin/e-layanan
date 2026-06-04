@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { canAccessPengajuan } from "@/lib/auth/check";
 import { buildDocumentContext } from "@/lib/document/context-builder";
 import { selectTemplate } from "@/lib/document/templates";
 import { generatePdf } from "@/lib/document/generate-pdf";
@@ -13,6 +14,7 @@ export async function GET(
   if (!session?.user?.id) {
     return new NextResponse("Unauthorized", { status: 401 });
   }
+  const userId = Number(session.user.id);
 
   const { id } = await params;
   const pengajuanId = Number(id);
@@ -26,6 +28,11 @@ export async function GET(
 
   if (!pengajuan) {
     return new NextResponse("Pengajuan tidak ditemukan", { status: 404 });
+  }
+
+  const canAccess = await canAccessPengajuan(userId, pengajuanId);
+  if (!canAccess) {
+    return new NextResponse("Forbidden", { status: 403 });
   }
 
   const layananKode = pengajuan.jenis_layanan.kode;

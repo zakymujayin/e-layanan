@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import { canAccessPengajuan } from "@/lib/auth/check";
 import { notFound, redirect } from "next/navigation";
 import { StatusBadge } from "@/components/pengajuan/StatusBadge";
 import { ProgressBar } from "@/components/pengajuan/ProgressBar";
@@ -34,6 +35,9 @@ export default async function PengajuanDetailPage({ params }: { params: Promise<
   });
 
   if (!pengajuan) notFound();
+
+  const canAccess = await canAccessPengajuan(userId, pengajuan.id);
+  if (!canAccess) notFound();
 
   const currentStep = pengajuan.current_step_code
     ? await prisma.workflowStep.findFirst({
