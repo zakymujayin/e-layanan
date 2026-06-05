@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { storage } from "@/lib/storage/local";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import type { PositionCode } from "@/generated/prisma/enums";
@@ -100,7 +101,12 @@ async function getPejabat(
   const dosen = pos.dosen;
   let ttdHtml: string | undefined;
   if (dosen.user?.ttd_scan?.file_path) {
-    ttdHtml = `<img src="${dosen.user.ttd_scan.file_path}" style="height:70px;" alt="TTD">`;
+    try {
+      const buf = await storage.download(dosen.user.ttd_scan.file_path);
+      ttdHtml = `<img src="data:image/png;base64,${buf.toString("base64")}" style="height:70px;" alt="TTD">`;
+    } catch {
+      // TTD file missing from disk — leave ttdHtml undefined, template uses placeholder
+    }
   }
   return {
     nama: [dosen.gelar_depan, dosen.nama_lengkap, dosen.gelar_belakang]
