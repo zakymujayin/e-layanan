@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth";
 import { validateTransition } from "./validate-transition";
 import { createPengajuanLog } from "./audit";
 import { createNotification } from "@/lib/notification";
+import { generateAndStoreDokumen } from "@/lib/document/generate-and-store";
 
 async function verifyActorForStep(
   userId: number,
@@ -229,6 +230,25 @@ export async function executeWorkflowAction(input: {
       entity_type: "pengajuan",
       entity_id: pengajuan.id,
     }).catch(() => {});
+
+    const TA_SIDANG = ["TA-03", "TA-04", "TA-05"] as const;
+    if (TA_SIDANG.includes(pengajuan.jenis_layanan.kode as (typeof TA_SIDANG)[number])) {
+      prisma.penomoranCounter
+        .findFirst({
+          where: { pengajuan_id: pengajuan.id, status: { in: ["reserved", "active"] } },
+          orderBy: { reserved_at: "desc" },
+        })
+        .catch(() => null)
+        .then((penomoran) => {
+          generateAndStoreDokumen({
+            pengajuanId: pengajuan.id,
+            layananKode: pengajuan.jenis_layanan.kode,
+            jenis: "surat_tugas",
+            signedBy: userId,
+            nomorSurat: penomoran?.nomor_formatted ?? undefined,
+          }).catch((err) => console.error(`[Phase1PDF] pengajuan ${pengajuan.id}:`, err));
+        });
+    }
   }
 
   if ((input.action === "approve" || input.action === "select_judul") && nextStepCode) {

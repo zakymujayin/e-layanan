@@ -132,7 +132,9 @@ export default async function ArsipPage() {
                     )}
                     {dok.file_path_final && (
                       <Link
-                        href={`/api/pengajuan/${dok.pengajuan_id}/pdf?mode=final`}
+                        href={`/api/pengajuan/${dok.pengajuan_id}/pdf?mode=final&jenis=${
+                          dok.jenis_dokumen === "Surat Tugas" ? "surat_tugas" : "berita_acara"
+                        }`}
                         target="_blank"
                         className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
                       >

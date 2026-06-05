@@ -82,6 +82,17 @@ export default async function PengajuanDetailPage({
   );
   const isSekretarisSidang = userAssignments.some(a => a.assignment_type === "sekretaris_sidang");
 
+  const dokumenOutputs =
+    pengajuan.status === "selesai"
+      ? await prisma.dokumenOutput.findMany({
+          where: { pengajuan_id: pengajuan.id, is_final: true },
+          select: { jenis_dokumen: true, file_path_final: true },
+        })
+      : [];
+
+  const hasSuratTugas = dokumenOutputs.some((d) => d.jenis_dokumen === "Surat Tugas");
+  const hasBeritaAcara = dokumenOutputs.some((d) => d.jenis_dokumen === "Berita Acara dan Nilai");
+
   const isPA = pengajuan.pengajuan_data?.field_values
     ? (pengajuan.pengajuan_data.field_values as any).pa_dosen_id === user?.dosen?.id
     : false;
@@ -287,11 +298,23 @@ export default async function PengajuanDetailPage({
             </Button>
           </Link>
         ) : (
-          <Link
-            href={`/api/pengajuan/${pengajuan.id}/pdf?mode=final`}
-          >
-            <Button type="button">Unduh PDF Final</Button>
-          </Link>
+          <div className="flex items-center gap-2 flex-wrap">
+            {hasSuratTugas && (
+              <Link href={`/api/pengajuan/${pengajuan.id}/pdf?mode=final&jenis=surat_tugas`}>
+                <Button variant="outline" type="button">Unduh Surat Tugas</Button>
+              </Link>
+            )}
+            {hasBeritaAcara && (
+              <Link href={`/api/pengajuan/${pengajuan.id}/pdf?mode=final&jenis=berita_acara`}>
+                <Button type="button">Unduh Berita Acara &amp; Nilai</Button>
+              </Link>
+            )}
+            {!hasSuratTugas && !hasBeritaAcara && (
+              <Link href={`/api/pengajuan/${pengajuan.id}/pdf?mode=final`}>
+                <Button type="button">Unduh PDF Final</Button>
+              </Link>
+            )}
+          </div>
         )}
       </div>
     </div>

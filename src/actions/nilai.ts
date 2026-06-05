@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { createNotification } from "@/lib/notification";
+import { generateAndStoreDokumen } from "@/lib/document/generate-and-store";
 
 const NilaiSemproSchema = z.object({
   nilai: z.number().min(0).max(100, "Nilai harus 0-100"),
@@ -91,6 +92,13 @@ export async function inputNilaiSempro(
         entity_id: pengajuanId,
       }).catch(() => {});
     }
+
+    generateAndStoreDokumen({
+      pengajuanId,
+      layananKode: "TA-03",
+      jenis: "berita_acara",
+      signedBy: userId,
+    }).catch((err) => console.error("[Phase2PDF TA-03]", err));
   }
 
   revalidatePath(`/pengajuan/${pengajuanId}`);
@@ -176,6 +184,13 @@ export async function inputNilaiKomprehensif(
         entity_id: pengajuanId,
       }).catch(() => {});
     }
+
+    generateAndStoreDokumen({
+      pengajuanId,
+      layananKode: "TA-04",
+      jenis: "berita_acara",
+      signedBy: userId,
+    }).catch((err) => console.error("[Phase2PDF TA-04]", err));
   }
 
   revalidatePath(`/pengajuan/${pengajuanId}`);
@@ -274,4 +289,11 @@ export async function inputNilaiMunaqasyah(
       entity_id: pengajuanId,
     }).catch(() => {});
   }
+
+  generateAndStoreDokumen({
+    pengajuanId,
+    layananKode: "TA-05",
+    jenis: "berita_acara",
+    signedBy: userId,
+  }).catch((err) => console.error("[Phase2PDF TA-05]", err));
 }
