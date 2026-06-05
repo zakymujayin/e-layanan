@@ -1,3 +1,15 @@
+/**
+ * In-memory rate limiter — single-process only.
+ *
+ * Works correctly as long as the app runs as a single Node.js process.
+ * For campus scale (~50 concurrent users) single-process is adequate.
+ *
+ * If horizontal scaling is needed, replace this Map with a Redis-backed
+ * implementation or use DB-level upsert via Prisma.
+ *
+ * DO NOT run multiple workers (PM2 cluster mode) without replacing this.
+ */
+
 type RateRecord = { count: number; resetAt: number };
 const store = new Map<string, RateRecord>();
 

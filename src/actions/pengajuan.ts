@@ -982,6 +982,11 @@ export async function setPengujiKomprehensif(pengajuanId: number, data: { penguj
   const userId = Number(session.user.id);
   await requireRole(userId, ["sekprodi"]);
 
+  const existingPengujiKomp = await prisma.assignment.count({
+    where: { pengajuan_id: pengajuanId, assignment_type: { in: ["penguji_komprehensif_prodi", "penguji_komprehensif_keislaman"] } },
+  });
+  if (existingPengujiKomp > 0) throw new Error("ERR_BUS_DUPLICATE: Penguji komprehensif sudah ditetapkan");
+
   await prisma.assignment.createMany({
     data: [
       { assignment_type: "penguji_komprehensif_prodi", dosen_id: data.penguji_prodi_dosen_id, pengajuan_id: pengajuanId, is_active: true },
@@ -1043,6 +1048,11 @@ export async function setMajelisTA05(
   });
   if (!pengajuan) throw new Error("ERR_BUS_PROFILE_NOT_FOUND: Pengajuan tidak ditemukan");
 
+  const existingMajelis = await prisma.assignment.count({
+    where: { pengajuan_id: pengajuanId, assignment_type: { in: ["ketua_sidang", "sekretaris_sidang", "penguji_skripsi"] } },
+  });
+  if (existingMajelis > 0) throw new Error("ERR_BUS_DUPLICATE: Majelis sidang sudah ditetapkan");
+
   await prisma.assignment.createMany({
     data: [
       { assignment_type: "ketua_sidang", dosen_id: data.ketua_sidang_dosen_id, pengajuan_id: pengajuanId, mahasiswa_id: pengajuan.mahasiswa_id, is_active: true },
@@ -1100,6 +1110,11 @@ export async function setPengujiTA03(pengajuanId: number, data: { penguji_1_dose
   });
   if (!pengajuan) throw new Error("Pengajuan tidak ditemukan");
 
+  const existingPenguji = await prisma.assignment.count({
+    where: { pengajuan_id: pengajuanId, assignment_type: "penguji_proposal" },
+  });
+  if (existingPenguji > 0) throw new Error("ERR_BUS_DUPLICATE: Penguji sudah ditetapkan untuk pengajuan ini");
+
   await prisma.assignment.createMany({
     data: [
       { assignment_type: "penguji_proposal", dosen_id: data.penguji_1_dosen_id, pengajuan_id: pengajuanId, is_active: true },
@@ -1138,6 +1153,11 @@ export async function setPembimbingTA02(
     include: { pengajuan_data: true },
   });
   if (!pengajuan) throw new Error("ERR_BUS_PROFILE_NOT_FOUND: Pengajuan tidak ditemukan");
+
+  const existingPembimbing = await prisma.assignment.count({
+    where: { pengajuan_id: pengajuanId, assignment_type: { in: ["pembimbing_skripsi_1", "pembimbing_skripsi_2"] } },
+  });
+  if (existingPembimbing > 0) throw new Error("ERR_BUS_DUPLICATE: Pembimbing sudah ditetapkan untuk pengajuan ini");
 
   await prisma.assignment.createMany({
     data: [

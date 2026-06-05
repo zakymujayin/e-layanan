@@ -50,6 +50,11 @@ export async function inputNilaiSempro(
   const validated = NilaiSemproSchema.safeParse(data);
   if (!validated.success) throw new Error(`ERR_VAL_INVALID_FORMAT: ${validated.error.issues[0].message}`);
 
+  const alreadySubmitted = await prisma.nilaiSidang.findFirst({
+    where: { pengajuan_id: pengajuanId, dosen_id: user.dosen.id },
+  });
+  if (alreadySubmitted) throw new Error("ERR_BUS_DUPLICATE: Anda sudah menginput nilai untuk sidang ini");
+
   await prisma.nilaiSidang.create({
     data: {
       pengajuan_id: pengajuanId,
@@ -127,6 +132,11 @@ export async function inputNilaiKomprehensif(
 
   const validated = NilaiKomprehensifSchema.safeParse(data);
   if (!validated.success) throw new Error(`ERR_VAL_INVALID_FORMAT: ${validated.error.issues[0].message}`);
+
+  const alreadySubmittedKomp = await prisma.nilaiSidang.findFirst({
+    where: { pengajuan_id: pengajuanId, dosen_id: user.dosen.id },
+  });
+  if (alreadySubmittedKomp) throw new Error("ERR_BUS_DUPLICATE: Anda sudah menginput nilai untuk ujian ini");
 
   await prisma.nilaiSidang.create({
     data: {
@@ -217,6 +227,11 @@ export async function inputNilaiMunaqasyah(
 
   const validated = NilaiMunaqasyahSchema.safeParse(data);
   if (!validated.success) throw new Error(`ERR_VAL_INVALID_FORMAT: ${validated.error.issues[0].message}`);
+
+  const alreadySubmittedMunaq = await prisma.nilaiSidang.findFirst({
+    where: { pengajuan_id: pengajuanId, dosen_id: user.dosen.id },
+  });
+  if (alreadySubmittedMunaq) throw new Error("ERR_BUS_DUPLICATE: Nilai sudah diinput");
 
   const { nilaiP1, nilaiP2, nilaiPenguji1, nilaiPenguji2, keputusan, catatan } = validated.data;
   const nilaiList = [nilaiP1, nilaiP2, nilaiPenguji1, nilaiPenguji2];
