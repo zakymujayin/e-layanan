@@ -92,47 +92,48 @@ export async function submitPengajuanTA01(formData: FormData) {
   }
   const { judul_1: judul1, judul_2: judul2, judul_3: judul3, judul_4: judul4, judul_5: judul5, pa_dosen_id: paDosenId } = parsed.data;
 
-  const pengajuan = await prisma.pengajuanLayanan.create({
-    data: {
-      kode_pengajuan: "PENDING",
-      mahasiswa_id: mhs.id,
-      jenis_layanan_id: layanan.id,
-      academic_period_id: semester.id,
-      workflow_definition_id: layanan.workflow_definitions[0].id,
-      status: firstStep.status_code as "submitted",
-      current_step_code: firstStep.step_code,
-      scope_level: "prodi",
-      fakultas_id: mhs.prodi.fakultas_id,
-      prodi_id: mhs.prodi_id,
-      pengajuan_data: {
-        create: {
-          field_values: { judul_1: judul1, judul_2: judul2, judul_3: judul3, judul_4: judul4, judul_5: judul5, pa_dosen_id: paDosenId },
+  const pengajuan = await prisma.$transaction(async (tx) => {
+    const created = await tx.pengajuanLayanan.create({
+      data: {
+        kode_pengajuan: "PENDING",
+        mahasiswa_id: mhs.id,
+        jenis_layanan_id: layanan.id,
+        academic_period_id: semester.id,
+        workflow_definition_id: layanan.workflow_definitions[0].id,
+        status: firstStep.status_code as "submitted",
+        current_step_code: firstStep.step_code,
+        scope_level: "prodi",
+        fakultas_id: mhs.prodi.fakultas_id,
+        prodi_id: mhs.prodi_id,
+        pengajuan_data: {
+          create: {
+            field_values: { judul_1: judul1, judul_2: judul2, judul_3: judul3, judul_4: judul4, judul_5: judul5, pa_dosen_id: paDosenId },
+          },
+        },
+        pengajuan_versi: {
+          create: {
+            versi_ke: 1,
+            data_snapshot: { judul_1: judul1, judul_2: judul2, judul_3: judul3 },
+            dokumen_snapshot: {},
+            dibuat_oleh: userId,
+          },
+        },
+        pengajuan_log: {
+          create: {
+            action_code: "submit",
+            performed_by: userId,
+            from_status: null,
+            to_status: firstStep.status_code,
+          },
         },
       },
-      pengajuan_versi: {
-        create: {
-          versi_ke: 1,
-          data_snapshot: { judul_1: judul1, judul_2: judul2, judul_3: judul3 },
-          dokumen_snapshot: {},
-          dibuat_oleh: userId,
-        },
-      },
-      pengajuan_log: {
-        create: {
-          action_code: "submit",
-          performed_by: userId,
-          from_status: null,
-          to_status: firstStep.status_code,
-        },
-      },
-    },
-  });
-
-  const tahun = new Date().getFullYear();
-  const kode = `TA-${tahun}-${String(pengajuan.id).padStart(5, "0")}`;
-  await prisma.pengajuanLayanan.update({
-    where: { id: pengajuan.id },
-    data: { kode_pengajuan: kode },
+    });
+    const tahun = new Date().getFullYear();
+    const kode = `TA-${tahun}-${String(created.id).padStart(5, "0")}`;
+    return tx.pengajuanLayanan.update({
+      where: { id: created.id },
+      data: { kode_pengajuan: kode },
+    });
   });
 
   await prisma.assignment.create({
@@ -199,50 +200,51 @@ export async function submitPengajuanTA02(formData: FormData) {
     where: { mahasiswa_id: mhs.id, status: "aktif" },
   });
 
-  const pengajuan = await prisma.pengajuanLayanan.create({
-    data: {
-      kode_pengajuan: "PENDING",
-      mahasiswa_id: mhs.id,
-      jenis_layanan_id: layanan.id,
-      academic_period_id: semester.id,
-      workflow_definition_id: layanan.workflow_definitions[0].id,
-      status: firstStep.status_code as "submitted",
-      current_step_code: firstStep.step_code,
-      scope_level: "prodi",
-      fakultas_id: mhs.prodi.fakultas_id,
-      prodi_id: mhs.prodi_id,
-      pengajuan_data: {
-        create: {
-          field_values: {
-            judul_skripsi: judulSkripsi?.judul_aktif ?? null,
-            ta01_id: ta01.id,
+  const pengajuan = await prisma.$transaction(async (tx) => {
+    const created = await tx.pengajuanLayanan.create({
+      data: {
+        kode_pengajuan: "PENDING",
+        mahasiswa_id: mhs.id,
+        jenis_layanan_id: layanan.id,
+        academic_period_id: semester.id,
+        workflow_definition_id: layanan.workflow_definitions[0].id,
+        status: firstStep.status_code as "submitted",
+        current_step_code: firstStep.step_code,
+        scope_level: "prodi",
+        fakultas_id: mhs.prodi.fakultas_id,
+        prodi_id: mhs.prodi_id,
+        pengajuan_data: {
+          create: {
+            field_values: {
+              judul_skripsi: judulSkripsi?.judul_aktif ?? null,
+              ta01_id: ta01.id,
+            },
+          },
+        },
+        pengajuan_versi: {
+          create: {
+            versi_ke: 1,
+            data_snapshot: { judul: judulSkripsi?.judul_aktif },
+            dokumen_snapshot: {},
+            dibuat_oleh: userId,
+          },
+        },
+        pengajuan_log: {
+          create: {
+            action_code: "submit",
+            performed_by: userId,
+            from_status: null,
+            to_status: firstStep.status_code,
           },
         },
       },
-      pengajuan_versi: {
-        create: {
-          versi_ke: 1,
-          data_snapshot: { judul: judulSkripsi?.judul_aktif },
-          dokumen_snapshot: {},
-          dibuat_oleh: userId,
-        },
-      },
-      pengajuan_log: {
-        create: {
-          action_code: "submit",
-          performed_by: userId,
-          from_status: null,
-          to_status: firstStep.status_code,
-        },
-      },
-    },
-  });
-
-  const tahunTA02 = new Date().getFullYear();
-  const kodeTA02 = `TA-${tahunTA02}-${String(pengajuan.id).padStart(5, "0")}`;
-  await prisma.pengajuanLayanan.update({
-    where: { id: pengajuan.id },
-    data: { kode_pengajuan: kodeTA02 },
+    });
+    const tahunTA02 = new Date().getFullYear();
+    const kodeTA02 = `TA-${tahunTA02}-${String(created.id).padStart(5, "0")}`;
+    return tx.pengajuanLayanan.update({
+      where: { id: created.id },
+      data: { kode_pengajuan: kodeTA02 },
+    });
   });
 
   const dokumenIdsTA02 = (formData.get("dokumen_ids") as string)?.split(",").filter(Boolean).map(Number) ?? [];
@@ -305,52 +307,53 @@ export async function submitPengajuanTA03(formData: FormData) {
     include: { dosen: true },
   });
 
-  const pengajuan = await prisma.pengajuanLayanan.create({
-    data: {
-      kode_pengajuan: "PENDING",
-      mahasiswa_id: mhs.id,
-      jenis_layanan_id: layanan.id,
-      academic_period_id: semester.id,
-      workflow_definition_id: layanan.workflow_definitions[0].id,
-      status: firstStep.status_code as "submitted",
-      current_step_code: firstStep.step_code,
-      scope_level: "prodi",
-      fakultas_id: mhs.prodi.fakultas_id,
-      prodi_id: mhs.prodi_id,
-      pengajuan_data: {
-        create: {
-          field_values: {
-            judul_skripsi: judulSkripsi?.judul_aktif ?? null,
-            ta02_id: ta02.id,
-            pembimbing_1: pembimbing1?.dosen?.nama_lengkap ?? null,
-            pembimbing_2: pembimbing2?.dosen?.nama_lengkap ?? null,
+  const pengajuan = await prisma.$transaction(async (tx) => {
+    const created = await tx.pengajuanLayanan.create({
+      data: {
+        kode_pengajuan: "PENDING",
+        mahasiswa_id: mhs.id,
+        jenis_layanan_id: layanan.id,
+        academic_period_id: semester.id,
+        workflow_definition_id: layanan.workflow_definitions[0].id,
+        status: firstStep.status_code as "submitted",
+        current_step_code: firstStep.step_code,
+        scope_level: "prodi",
+        fakultas_id: mhs.prodi.fakultas_id,
+        prodi_id: mhs.prodi_id,
+        pengajuan_data: {
+          create: {
+            field_values: {
+              judul_skripsi: judulSkripsi?.judul_aktif ?? null,
+              ta02_id: ta02.id,
+              pembimbing_1: pembimbing1?.dosen?.nama_lengkap ?? null,
+              pembimbing_2: pembimbing2?.dosen?.nama_lengkap ?? null,
+            },
+          },
+        },
+        pengajuan_versi: {
+          create: {
+            versi_ke: 1,
+            data_snapshot: { judul: judulSkripsi?.judul_aktif },
+            dokumen_snapshot: {},
+            dibuat_oleh: userId,
+          },
+        },
+        pengajuan_log: {
+          create: {
+            action_code: "submit",
+            performed_by: userId,
+            from_status: null,
+            to_status: firstStep.status_code,
           },
         },
       },
-      pengajuan_versi: {
-        create: {
-          versi_ke: 1,
-          data_snapshot: { judul: judulSkripsi?.judul_aktif },
-          dokumen_snapshot: {},
-          dibuat_oleh: userId,
-        },
-      },
-      pengajuan_log: {
-        create: {
-          action_code: "submit",
-          performed_by: userId,
-          from_status: null,
-          to_status: firstStep.status_code,
-        },
-      },
-    },
-  });
-
-  const tahunTA03 = new Date().getFullYear();
-  const kodeTA03 = `TA-${tahunTA03}-${String(pengajuan.id).padStart(5, "0")}`;
-  await prisma.pengajuanLayanan.update({
-    where: { id: pengajuan.id },
-    data: { kode_pengajuan: kodeTA03 },
+    });
+    const tahunTA03 = new Date().getFullYear();
+    const kodeTA03 = `TA-${tahunTA03}-${String(created.id).padStart(5, "0")}`;
+    return tx.pengajuanLayanan.update({
+      where: { id: created.id },
+      data: { kode_pengajuan: kodeTA03 },
+    });
   });
 
   const dokumenIdsTA03 = (formData.get("dokumen_ids") as string)?.split(",").filter(Boolean).map(Number) ?? [];
@@ -480,28 +483,29 @@ export async function submitPengajuanAK(kode: string, formData: FormData) {
     }
   }
 
-  const pengajuan = await prisma.pengajuanLayanan.create({
-    data: {
-      kode_pengajuan: "PENDING",
-      mahasiswa_id: mhs.id,
-      jenis_layanan_id: layanan.id,
-      academic_period_id: semester.id,
-      workflow_definition_id: layanan.workflow_definitions[0].id,
-      status: firstStep.status_code as "submitted",
-      current_step_code: firstStep.step_code,
-      scope_level: "fakultas",
-      fakultas_id: mhs.prodi.fakultas_id,
-      prodi_id: mhs.prodi_id,
-      pengajuan_data: { create: { field_values: fieldValues as any } },
-      pengajuan_versi: { create: { versi_ke: 1, data_snapshot: fieldValues as any, dokumen_snapshot: {} as any, dibuat_oleh: userId } },
-      pengajuan_log: { create: { action_code: "submit", performed_by: userId, from_status: null, to_status: firstStep.status_code } },
-    },
-  });
-
-  const kodeAK = `AK-${new Date().getFullYear()}-${String(pengajuan.id).padStart(5, "0")}`;
-  await prisma.pengajuanLayanan.update({
-    where: { id: pengajuan.id },
-    data: { kode_pengajuan: kodeAK },
+  const pengajuan = await prisma.$transaction(async (tx) => {
+    const created = await tx.pengajuanLayanan.create({
+      data: {
+        kode_pengajuan: "PENDING",
+        mahasiswa_id: mhs.id,
+        jenis_layanan_id: layanan.id,
+        academic_period_id: semester.id,
+        workflow_definition_id: layanan.workflow_definitions[0].id,
+        status: firstStep.status_code as "submitted",
+        current_step_code: firstStep.step_code,
+        scope_level: "fakultas",
+        fakultas_id: mhs.prodi.fakultas_id,
+        prodi_id: mhs.prodi_id,
+        pengajuan_data: { create: { field_values: fieldValues as any } },
+        pengajuan_versi: { create: { versi_ke: 1, data_snapshot: fieldValues as any, dokumen_snapshot: {} as any, dibuat_oleh: userId } },
+        pengajuan_log: { create: { action_code: "submit", performed_by: userId, from_status: null, to_status: firstStep.status_code } },
+      },
+    });
+    const kodeAK = `AK-${new Date().getFullYear()}-${String(created.id).padStart(5, "0")}`;
+    return tx.pengajuanLayanan.update({
+      where: { id: created.id },
+      data: { kode_pengajuan: kodeAK },
+    });
   });
 
   const dokumenIdsAK = (formData.get("dokumen_ids") as string)?.split(",").filter(Boolean).map(Number) ?? [];
@@ -567,29 +571,30 @@ export async function submitPengajuanTA04(formData: FormData) {
     where: { mahasiswa_id: mhs.id, status: "aktif" },
   });
 
-  const pengajuan = await prisma.pengajuanLayanan.create({
-    data: {
-      kode_pengajuan: "PENDING",
-      mahasiswa_id: mhs.id,
-      jenis_layanan_id: layanan.id,
-      academic_period_id: semester.id,
-      workflow_definition_id: layanan.workflow_definitions[0].id,
-      status: firstStep.status_code as "submitted",
-      current_step_code: firstStep.step_code,
-      scope_level: "prodi",
-      fakultas_id: mhs.prodi.fakultas_id,
-      prodi_id: mhs.prodi_id,
-      pengajuan_data: { create: { field_values: { judul_skripsi: judulSkripsi?.judul_aktif ?? null } } },
-      pengajuan_versi: { create: { versi_ke: 1, data_snapshot: { judul: judulSkripsi?.judul_aktif }, dokumen_snapshot: {}, dibuat_oleh: userId } },
-      pengajuan_log: { create: { action_code: "submit", performed_by: userId, from_status: null, to_status: firstStep.status_code } },
-    },
-  });
-
-  const tahunTA04 = new Date().getFullYear();
-  const kodeTA04 = `TA-${tahunTA04}-${String(pengajuan.id).padStart(5, "0")}`;
-  await prisma.pengajuanLayanan.update({
-    where: { id: pengajuan.id },
-    data: { kode_pengajuan: kodeTA04 },
+  const pengajuan = await prisma.$transaction(async (tx) => {
+    const created = await tx.pengajuanLayanan.create({
+      data: {
+        kode_pengajuan: "PENDING",
+        mahasiswa_id: mhs.id,
+        jenis_layanan_id: layanan.id,
+        academic_period_id: semester.id,
+        workflow_definition_id: layanan.workflow_definitions[0].id,
+        status: firstStep.status_code as "submitted",
+        current_step_code: firstStep.step_code,
+        scope_level: "prodi",
+        fakultas_id: mhs.prodi.fakultas_id,
+        prodi_id: mhs.prodi_id,
+        pengajuan_data: { create: { field_values: { judul_skripsi: judulSkripsi?.judul_aktif ?? null } } },
+        pengajuan_versi: { create: { versi_ke: 1, data_snapshot: { judul: judulSkripsi?.judul_aktif }, dokumen_snapshot: {}, dibuat_oleh: userId } },
+        pengajuan_log: { create: { action_code: "submit", performed_by: userId, from_status: null, to_status: firstStep.status_code } },
+      },
+    });
+    const tahunTA04 = new Date().getFullYear();
+    const kodeTA04 = `TA-${tahunTA04}-${String(created.id).padStart(5, "0")}`;
+    return tx.pengajuanLayanan.update({
+      where: { id: created.id },
+      data: { kode_pengajuan: kodeTA04 },
+    });
   });
 
   const dokumenIdsTA04 = (formData.get("dokumen_ids") as string)?.split(",").filter(Boolean).map(Number) ?? [];
@@ -660,29 +665,30 @@ export async function submitPengajuanTA05(formData: FormData) {
     where: { mahasiswa_id: mhs.id, status: "aktif" },
   });
 
-  const pengajuan = await prisma.pengajuanLayanan.create({
-    data: {
-      kode_pengajuan: "PENDING",
-      mahasiswa_id: mhs.id,
-      jenis_layanan_id: layanan.id,
-      academic_period_id: semester.id,
-      workflow_definition_id: layanan.workflow_definitions[0].id,
-      status: firstStep.status_code as "submitted",
-      current_step_code: firstStep.step_code,
-      scope_level: "prodi",
-      fakultas_id: mhs.prodi.fakultas_id,
-      prodi_id: mhs.prodi_id,
-      pengajuan_data: { create: { field_values: { judul_skripsi: judulSkripsi?.judul_aktif ?? null } } },
-      pengajuan_versi: { create: { versi_ke: 1, data_snapshot: { judul: judulSkripsi?.judul_aktif }, dokumen_snapshot: {}, dibuat_oleh: userId } },
-      pengajuan_log: { create: { action_code: "submit", performed_by: userId, from_status: null, to_status: firstStep.status_code } },
-    },
-  });
-
-  const tahunTA05 = new Date().getFullYear();
-  const kodeTA05 = `TA-${tahunTA05}-${String(pengajuan.id).padStart(5, "0")}`;
-  await prisma.pengajuanLayanan.update({
-    where: { id: pengajuan.id },
-    data: { kode_pengajuan: kodeTA05 },
+  const pengajuan = await prisma.$transaction(async (tx) => {
+    const created = await tx.pengajuanLayanan.create({
+      data: {
+        kode_pengajuan: "PENDING",
+        mahasiswa_id: mhs.id,
+        jenis_layanan_id: layanan.id,
+        academic_period_id: semester.id,
+        workflow_definition_id: layanan.workflow_definitions[0].id,
+        status: firstStep.status_code as "submitted",
+        current_step_code: firstStep.step_code,
+        scope_level: "prodi",
+        fakultas_id: mhs.prodi.fakultas_id,
+        prodi_id: mhs.prodi_id,
+        pengajuan_data: { create: { field_values: { judul_skripsi: judulSkripsi?.judul_aktif ?? null } } },
+        pengajuan_versi: { create: { versi_ke: 1, data_snapshot: { judul: judulSkripsi?.judul_aktif }, dokumen_snapshot: {}, dibuat_oleh: userId } },
+        pengajuan_log: { create: { action_code: "submit", performed_by: userId, from_status: null, to_status: firstStep.status_code } },
+      },
+    });
+    const tahunTA05 = new Date().getFullYear();
+    const kodeTA05 = `TA-${tahunTA05}-${String(created.id).padStart(5, "0")}`;
+    return tx.pengajuanLayanan.update({
+      where: { id: created.id },
+      data: { kode_pengajuan: kodeTA05 },
+    });
   });
 
   const dokumenIdsTA05 = (formData.get("dokumen_ids") as string)?.split(",").filter(Boolean).map(Number) ?? [];
@@ -755,30 +761,31 @@ export async function submitPengajuanTA06(formData: FormData) {
     similarity_percentage: similarityPercentage,
   };
 
-  const pengajuan = await prisma.pengajuanLayanan.create({
-    data: {
-      kode_pengajuan: "PENDING",
-      mahasiswa_id: mhs.id,
-      jenis_layanan_id: layanan.id,
-      academic_period_id: semester.id,
-      workflow_definition_id: layanan.workflow_definitions[0].id,
-      status: firstStep.status_code as "submitted",
-      current_step_code: firstStep.step_code,
-      scope_level: "prodi",
-      fakultas_id: mhs.prodi.fakultas_id,
-      prodi_id: mhs.prodi_id,
-      revisi_ke: 1,
-      pengajuan_data: { create: { field_values: fieldValues as any } },
-      pengajuan_versi: { create: { versi_ke: 1, data_snapshot: fieldValues as any, dokumen_snapshot: {} as any, dibuat_oleh: userId } },
-      pengajuan_log: { create: { action_code: "submit", performed_by: userId, from_status: null, to_status: firstStep.status_code } },
-    },
-  });
-
-  const tahunTA06 = new Date().getFullYear();
-  const kodeTA06 = `TA-${tahunTA06}-${String(pengajuan.id).padStart(5, "0")}`;
-  await prisma.pengajuanLayanan.update({
-    where: { id: pengajuan.id },
-    data: { kode_pengajuan: kodeTA06 },
+  const pengajuan = await prisma.$transaction(async (tx) => {
+    const created = await tx.pengajuanLayanan.create({
+      data: {
+        kode_pengajuan: "PENDING",
+        mahasiswa_id: mhs.id,
+        jenis_layanan_id: layanan.id,
+        academic_period_id: semester.id,
+        workflow_definition_id: layanan.workflow_definitions[0].id,
+        status: firstStep.status_code as "submitted",
+        current_step_code: firstStep.step_code,
+        scope_level: "prodi",
+        fakultas_id: mhs.prodi.fakultas_id,
+        prodi_id: mhs.prodi_id,
+        revisi_ke: 1,
+        pengajuan_data: { create: { field_values: fieldValues as any } },
+        pengajuan_versi: { create: { versi_ke: 1, data_snapshot: fieldValues as any, dokumen_snapshot: {} as any, dibuat_oleh: userId } },
+        pengajuan_log: { create: { action_code: "submit", performed_by: userId, from_status: null, to_status: firstStep.status_code } },
+      },
+    });
+    const tahunTA06 = new Date().getFullYear();
+    const kodeTA06 = `TA-${tahunTA06}-${String(created.id).padStart(5, "0")}`;
+    return tx.pengajuanLayanan.update({
+      where: { id: created.id },
+      data: { kode_pengajuan: kodeTA06 },
+    });
   });
 
   const dokumenIdsTA06 = (formData.get("dokumen_ids") as string)?.split(",").filter(Boolean).map(Number) ?? [];
