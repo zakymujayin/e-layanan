@@ -4,7 +4,7 @@ import { renderFooter } from "../partials/footer";
 import { PAGE_CSS, HEADER_CSS, FOOTER_CSS } from "../partials/styles";
 import { placeholder, reserved } from "../partials/placeholder";
 
-export function renderUjianSkripsi(ctx: DocumentContext): string {
+export function renderUjianSkripsiSuratTugas(ctx: DocumentContext): string {
   const isPreview = ctx.mode === "preview";
 
   const nomorSurat = isPreview
@@ -178,4 +178,356 @@ ${renderFooter(qrHtml)}
 </div>
 </body>
 </html>`;
+}
+
+export function renderUjianSkripsiBeritaAcara(ctx: DocumentContext): string {
+  const isPreview = ctx.mode === "preview";
+  const qrHtml = isPreview ? placeholder(ctx.qrcode, "QR") : (ctx.qrcode ?? "");
+
+  const namaMhs = placeholder(ctx.nama_mahasiswa, "NAMA MAHASISWA");
+  const nim = placeholder(ctx.nim, "NIM");
+  const namaProdi = placeholder(ctx.nama_prodi, "NAMA PRODI");
+  const judul = placeholder(ctx.judul_disetujui, "JUDUL SKRIPSI");
+  const hari = placeholder(ctx.hari_sidang, "HARI");
+  const tanggal = placeholder(ctx.tanggal_sidang, "TANGGAL");
+  const waktu = placeholder(ctx.waktu_sidang, "WAKTU");
+  const ruang = placeholder(ctx.ruang_sidang, "RUANG");
+  const ketua = placeholder(ctx.ketua_sidang, "KETUA SIDANG");
+  const sekretaris = placeholder(ctx.sekretaris_sidang, "SEKRETARIS SIDANG");
+  const pembimbing1 = placeholder(ctx.pembimbing_1, "PEMBIMBING 1");
+  const pembimbing2 = placeholder(ctx.pembimbing_2, "PEMBIMBING 2");
+  const penguji1 = placeholder(ctx.penguji_1, "PENGUJI 1");
+  const penguji2 = placeholder(ctx.penguji_2, "PENGUJI 2");
+
+  const keputusanText = ctx.keputusan_sidang === "lulus" ? "LULUS"
+    : ctx.keputusan_sidang === "tidak_lulus" ? "TIDAK LULUS"
+    : placeholder(null, "KEPUTUSAN");
+
+  const nilaiPembimbing1 = ctx.nilai_per_penilai?.pembimbing_1 != null
+    ? String(ctx.nilai_per_penilai.pembimbing_1)
+    : placeholder(null, "NILAI");
+  const nilaiPembimbing2 = ctx.nilai_per_penilai?.pembimbing_2 != null
+    ? String(ctx.nilai_per_penilai.pembimbing_2)
+    : placeholder(null, "NILAI");
+  const nilaiPenguji1 = ctx.nilai_per_penilai?.penguji_1 != null
+    ? String(ctx.nilai_per_penilai.penguji_1)
+    : placeholder(null, "NILAI");
+  const nilaiPenguji2 = ctx.nilai_per_penilai?.penguji_2 != null
+    ? String(ctx.nilai_per_penilai.penguji_2)
+    : placeholder(null, "NILAI");
+  const nilaiAkhir = ctx.nilai_akhir != null ? String(ctx.nilai_akhir) : placeholder(null, "RATA-RATA");
+  const ipkDisplay = ctx.ipk_equivalent != null ? String(ctx.ipk_equivalent) : placeholder(null, "IPK");
+
+  const yudisiumLabel = ctx.yudisium === "pujian" ? "PUJIAN"
+    : ctx.yudisium === "sangat_memuaskan" ? "SANGAT MEMUASKAN"
+    : ctx.yudisium === "memuaskan" ? "MEMUASKAN"
+    : placeholder(null, "YUDISIUM");
+
+  return `<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Berita Acara Munaqasyah</title>
+<style>
+  ${PAGE_CSS}${HEADER_CSS}${FOOTER_CSS}
+
+  .center { text-align: center; }
+  .justify { text-align: justify; }
+  .bold { font-weight: bold; }
+  .underline { text-decoration: underline; }
+
+  .ba-title {
+    text-align: center;
+    font-size: 13pt;
+    font-weight: bold;
+    text-decoration: underline;
+    margin: 10px 0 4px 0;
+  }
+
+  .ba-subtitle {
+    text-align: center;
+    font-size: 11pt;
+    font-weight: bold;
+    margin: 0 0 15px 0;
+  }
+
+  .info-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 10px 0;
+  }
+
+  .info-table td {
+    padding: 3px 6px;
+    vertical-align: top;
+    font-size: 11pt;
+  }
+
+  .info-table td:first-child {
+    width: 190px;
+  }
+
+  .info-table td:nth-child(2) {
+    width: 10px;
+    text-align: center;
+  }
+
+  .majelis-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 10px 0;
+  }
+
+  .majelis-table th,
+  .majelis-table td {
+    border: 1px solid #000;
+    padding: 5px 8px;
+    font-size: 10pt;
+    vertical-align: top;
+  }
+
+  .majelis-table th {
+    background: #f0f0f0;
+    text-align: center;
+    font-weight: bold;
+  }
+
+  .nilai-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 10px 0;
+  }
+
+  .nilai-table th,
+  .nilai-table td {
+    border: 1px solid #000;
+    padding: 5px 8px;
+    font-size: 11pt;
+    vertical-align: middle;
+  }
+
+  .nilai-table th {
+    background: #f0f0f0;
+    text-align: center;
+    font-weight: bold;
+  }
+
+  .nilai-table td:last-child {
+    text-align: center;
+  }
+
+  .keputusan-box {
+    border: 2px solid #000;
+    padding: 10px 20px;
+    display: inline-block;
+    font-size: 14pt;
+    font-weight: bold;
+    margin: 10px 0;
+  }
+
+  .sig-row {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 30px;
+  }
+
+  .sig-block {
+    text-align: center;
+    width: 45%;
+  }
+
+  .sig-space {
+    min-height: 70px;
+    margin: 8px 0 4px 0;
+  }
+
+  .sig-name {
+    font-weight: bold;
+    text-decoration: underline;
+  }
+</style>
+</head>
+<body>
+
+<!-- ==================== PAGE 1: BERITA ACARA MUNAQASYAH ==================== -->
+<div class="page">
+${renderKopSurat(ctx.logo_src)}
+
+<div class="ba-title">BERITA ACARA MUNAQASYAH</div>
+<div class="ba-subtitle">FAKULTAS USHULUDDIN DAN ADAB</div>
+
+<table class="info-table">
+  <tr><td>Nama Mahasiswa</td><td>:</td><td>${namaMhs}</td></tr>
+  <tr><td>NIM</td><td>:</td><td>${nim}</td></tr>
+  <tr><td>Program Studi</td><td>:</td><td>${namaProdi}</td></tr>
+  <tr><td>Judul Skripsi</td><td>:</td><td><em>${judul}</em></td></tr>
+</table>
+
+<table class="info-table" style="margin-top:12px;">
+  <tr><td>Hari / Tanggal</td><td>:</td><td>${hari}, ${tanggal}</td></tr>
+  <tr><td>Waktu</td><td>:</td><td>${waktu}</td></tr>
+  <tr><td>Ruang</td><td>:</td><td>${ruang}</td></tr>
+</table>
+
+<p style="margin:12px 0 6px 0; font-size:11pt; font-weight:bold;">Susunan Majelis Penguji:</p>
+
+<table class="majelis-table">
+  <thead>
+    <tr>
+      <th style="width:25px;">No</th>
+      <th>Nama</th>
+      <th style="width:180px;">Jabatan</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="text-align:center;">1</td>
+      <td>${ketua}</td>
+      <td>Ketua Sidang</td>
+    </tr>
+    <tr>
+      <td style="text-align:center;">2</td>
+      <td>${sekretaris}</td>
+      <td>Sekretaris Sidang</td>
+    </tr>
+    <tr>
+      <td style="text-align:center;">3</td>
+      <td>${pembimbing1}</td>
+      <td>Pembimbing I</td>
+    </tr>
+    <tr>
+      <td style="text-align:center;">4</td>
+      <td>${pembimbing2}</td>
+      <td>Pembimbing II</td>
+    </tr>
+    <tr>
+      <td style="text-align:center;">5</td>
+      <td>${penguji1}</td>
+      <td>Penguji I</td>
+    </tr>
+    <tr>
+      <td style="text-align:center;">6</td>
+      <td>${penguji2}</td>
+      <td>Penguji II</td>
+    </tr>
+  </tbody>
+</table>
+
+<p style="margin:15px 0 6px 0; font-size:11pt; font-weight:bold;">Keputusan Sidang Munaqasyah:</p>
+
+<div style="text-align:center; margin: 10px 0;">
+  <span class="keputusan-box">${keputusanText}</span>
+</div>
+
+<p style="font-size:10pt; margin:15px 0; text-align:justify;">
+  Demikian berita acara ini dibuat dengan sebenar-benarnya untuk digunakan sebagaimana mestinya.
+</p>
+
+<div class="sig-row">
+  <div class="sig-block">
+    <p style="margin:0;">Ketua Sidang,</p>
+    <div class="sig-space"></div>
+    <p class="sig-name">${ketua}</p>
+  </div>
+  <div class="sig-block">
+    <p style="margin:0;">Sekretaris Sidang,</p>
+    <div class="sig-space"></div>
+    <p class="sig-name">${sekretaris}</p>
+  </div>
+</div>
+
+<div class="clear"></div>
+${renderFooter(qrHtml)}
+</div>
+
+<!-- ==================== PAGE 2: REKAPITULASI NILAI MUNAQASYAH ==================== -->
+<div class="page">
+${renderKopSurat(ctx.logo_src)}
+
+<div class="ba-title">REKAPITULASI NILAI UJIAN MUNAQASYAH</div>
+<div class="ba-subtitle">FAKULTAS USHULUDDIN DAN ADAB</div>
+
+<table class="info-table">
+  <tr><td>Nama Mahasiswa</td><td>:</td><td>${namaMhs}</td></tr>
+  <tr><td>NIM</td><td>:</td><td>${nim}</td></tr>
+  <tr><td>Program Studi</td><td>:</td><td>${namaProdi}</td></tr>
+  <tr><td>Judul Skripsi</td><td>:</td><td><em>${judul}</em></td></tr>
+</table>
+
+<p style="margin:15px 0 6px 0; font-size:11pt; font-weight:bold;">Nilai Per Penilai:</p>
+
+<table class="nilai-table">
+  <thead>
+    <tr>
+      <th style="width:25px;">No</th>
+      <th>Nama Penilai</th>
+      <th style="width:150px;">Jabatan</th>
+      <th style="width:80px;">Nilai</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="text-align:center;">1</td>
+      <td>${pembimbing1}</td>
+      <td>Pembimbing I</td>
+      <td>${nilaiPembimbing1}</td>
+    </tr>
+    <tr>
+      <td style="text-align:center;">2</td>
+      <td>${pembimbing2}</td>
+      <td>Pembimbing II</td>
+      <td>${nilaiPembimbing2}</td>
+    </tr>
+    <tr>
+      <td style="text-align:center;">3</td>
+      <td>${penguji1}</td>
+      <td>Penguji I</td>
+      <td>${nilaiPenguji1}</td>
+    </tr>
+    <tr>
+      <td style="text-align:center;">4</td>
+      <td>${penguji2}</td>
+      <td>Penguji II</td>
+      <td>${nilaiPenguji2}</td>
+    </tr>
+    <tr>
+      <td colspan="3" style="text-align:center; font-weight:bold;">Nilai Rata-Rata</td>
+      <td style="font-weight:bold;">${nilaiAkhir}</td>
+    </tr>
+  </tbody>
+</table>
+
+<table class="info-table" style="margin-top:15px;">
+  <tr>
+    <td>IPK</td>
+    <td>:</td>
+    <td>${ipkDisplay}</td>
+  </tr>
+  <tr>
+    <td>Yudisium</td>
+    <td>:</td>
+    <td><strong>${yudisiumLabel}</strong></td>
+  </tr>
+</table>
+
+<div style="text-align:right; margin-top:20px;">
+  <div style="display:inline-block; text-align:center; width:260px;">
+    <p style="margin:0;">Serang, ${tanggal}</p>
+    <p style="margin:0;">Sekretaris Sidang,</p>
+    <div class="sig-space"></div>
+    <p class="sig-name">${sekretaris}</p>
+  </div>
+</div>
+
+<div class="clear"></div>
+${renderFooter(qrHtml)}
+</div>
+
+</body>
+</html>`;
+}
+
+// Keep original for backward compat
+export function renderUjianSkripsi(ctx: DocumentContext): string {
+  return renderUjianSkripsiSuratTugas(ctx);
 }

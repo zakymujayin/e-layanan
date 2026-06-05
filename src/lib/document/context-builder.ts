@@ -79,6 +79,16 @@ export interface DocumentContext {
   ketua_sidang: string | null;
   sekretaris_sidang: string | null;
   layanan_kode: string | null;
+
+  // Nilai data for Phase 2 (Berita Acara)
+  nilai_akhir: number | null;
+  ipk_equivalent: number | null;
+  yudisium: string | null;
+  keputusan_sidang: string | null;
+  catatan_sidang: string | null;
+  nilai_per_penilai: Record<string, number> | null;
+  x1_komprehensif: number | null;
+  x2_komprehensif: number | null;
 }
 
 function angkaKeTeks(n: number): string {
@@ -119,7 +129,8 @@ async function getPejabat(
 
 export async function buildDocumentContext(
   pengajuanId: number,
-  mode: "preview" | "final" = "preview"
+  mode: "preview" | "final" = "preview",
+  fase: "surat_tugas" | "berita_acara" = "surat_tugas"
 ): Promise<DocumentContext> {
   const pengajuan = await prisma.pengajuanLayanan.findUnique({
     where: { id: pengajuanId },
@@ -204,6 +215,48 @@ export async function buildDocumentContext(
     } catch { /* ignore invalid date */ }
   }
 
+  let nilai_akhir: number | null = null;
+  let ipk_equivalent: number | null = null;
+  let yudisium: string | null = null;
+  let keputusan_sidang: string | null = null;
+  let catatan_sidang: string | null = null;
+  let nilai_per_penilai: Record<string, number> | null = null;
+  let x1_komprehensif: number | null = null;
+  let x2_komprehensif: number | null = null;
+
+  if (fase === "berita_acara") {
+    const allNilai = await prisma.nilaiSidang.findMany({
+      where: { pengajuan_id: pengajuanId },
+    });
+    if (allNilai.length > 0) {
+      const sekRecord = allNilai.find(n => n.assignment_type === "sekretaris_sidang");
+      if (sekRecord) {
+        // TA-05 munaqasyah — sekretaris inputs all grades
+        nilai_akhir = sekRecord.nilai_akhir ?? null;
+        ipk_equivalent = sekRecord.ipk_equivalent ?? null;
+        yudisium = sekRecord.yudisium ?? null;
+        keputusan_sidang = sekRecord.keputusan ?? null;
+        catatan_sidang = sekRecord.catatan ?? null;
+        nilai_per_penilai = sekRecord.nilai_per_penilai as Record<string, number> | null;
+      } else {
+        // TA-03 sempro or TA-04 komprehensif
+        nilai_akhir = allNilai[0].nilai_akhir ?? null;
+        keputusan_sidang = allNilai.length >= 2
+          ? (allNilai.every(n => n.keputusan === "layak") ? "layak" : "tidak_layak")
+          : (allNilai[0].keputusan ?? null);
+        catatan_sidang = allNilai[0].catatan ?? null;
+
+        // TA-04: separate X1 and X2
+        const prodiRecord = allNilai.find(n => n.assignment_type === "penguji_komprehensif_prodi");
+        const keislamanRecord = allNilai.find(n => n.assignment_type === "penguji_komprehensif_keislaman");
+        if (prodiRecord || keislamanRecord) {
+          x1_komprehensif = prodiRecord?.nilai ?? null;
+          x2_komprehensif = keislamanRecord?.nilai ?? null;
+        }
+      }
+    }
+  }
+
   return {
     logo_src: "/images/logo-uin.png",
     nama_mahasiswa: mhs.nama_lengkap,
@@ -280,5 +333,14 @@ export async function buildDocumentContext(
     ketua_sidang: ketuaSidang?.dosen?.nama_lengkap ?? null,
     sekretaris_sidang: sekretarisSidang?.dosen?.nama_lengkap ?? null,
     layanan_kode: pengajuan.jenis_layanan.kode ?? null,
+
+    nilai_akhir,
+    ipk_equivalent,
+    yudisium,
+    keputusan_sidang,
+    catatan_sidang,
+    nilai_per_penilai,
+    x1_komprehensif,
+    x2_komprehensif,
   };
 }

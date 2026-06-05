@@ -3,7 +3,7 @@ import { renderKopSurat } from "../partials/kop-surat";
 import { renderFooter } from "../partials/footer";
 import { placeholder, reserved } from "../partials/placeholder";
 
-export function renderUjianKomprehensif(ctx: DocumentContext): string {
+function sharedVars(ctx: DocumentContext) {
   const isPreview = ctx.mode === "preview";
 
   const nomorSurat = isPreview
@@ -38,12 +38,16 @@ export function renderUjianKomprehensif(ctx: DocumentContext): string {
   const semesterAktif = placeholder(ctx.semester_aktif ?? null, "SEMESTER");
   const tahunAkademik = placeholder(ctx.tahun_akademik ?? null, "TAHUN AKADEMIK");
 
-  return `<!DOCTYPE html>
-<html lang="id">
-<head>
-<meta charset="UTF-8">
-<title>Ujian Komprehensif</title>
-<style>
+  return {
+    isPreview, nomorSurat, tanggalSurat,
+    wd1Nama, wd1Nip, ttdHtml, qrHtml,
+    penguji1Nama, penguji2Nama,
+    hariSidang, tanggalSidang, waktuSidang, ruangSidang,
+    namaMhs, nimMhs, namaProdi, kodeProdi, semesterAktif, tahunAkademik,
+  };
+}
+
+const PAGE_STYLES = `
 @page {
   size: A4 portrait;
   margin: 0;
@@ -378,390 +382,9 @@ table.footer-table td {
   text-align: center;
   margin: 0 5px;
 }
-</style>
-</head>
-<body>
+`;
 
-<!-- ==================== PAGE 1: SURAT TUGAS ==================== -->
-<div class="page">
-${renderKopSurat(ctx.logo_src)}
-
-<div class="title-section">
-  <p class="title-underline">SURAT TUGAS</p>
-  <p class="nomor-surat">NOMOR: ${nomorSurat}</p>
-</div>
-
-<p class="body-text-indent">
-  Dekan Fakultas Ushuluddin dan Adab UIN Sultan Maulana Hasanuddin Banten menugaskan kepada
-  dosen-dosen Fakultas Ushuluddin dan Adab sebagai berikut:
-</p>
-
-<table class="bordered-table">
-  <thead>
-    <tr>
-      <th style="width:25px;">NO</th>
-      <th>NAMA / NIM / JURUSAN</th>
-      <th>DEWAN PENGUJI</th>
-      <th style="width:120px;">WAKTU / RUANG</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td class="text-center">1</td>
-      <td style="font-size:9pt;">
-        ${namaMhs}<br>
-        NIM. ${nimMhs}<br>
-        ${namaProdi}
-      </td>
-      <td style="font-size:9pt;">
-        <strong>Materi Keahlian Prodi:</strong><br>
-        ${penguji1Nama}<br><br>
-        <strong>Materi Keislaman:</strong><br>
-        ${penguji2Nama}
-      </td>
-      <td style="font-size:8pt;">
-        Hari/tgl : ${hariSidang}, ${tanggalSidang}<br>
-        Waktu &emsp;: ${waktuSidang}<br>
-        Ruang &ensp;: ${ruangSidang}
-      </td>
-    </tr>
-  </tbody>
-</table>
-
-<p class="body-text-indent">
-  Untuk melaksanakan Ujian Komprehensif TA. ${tahunAkademik} pada:
-</p>
-
-<table class="data-table" style="margin-left:30px;">
-  <tr>
-    <td class="label-col">Hari / Tanggal</td>
-    <td class="sep-col">:</td>
-    <td>${hariSidang}, ${tanggalSidang}</td>
-  </tr>
-  <tr>
-    <td>Waktu</td>
-    <td>:</td>
-    <td>${waktuSidang}</td>
-  </tr>
-  <tr>
-    <td>Tempat / Ruang</td>
-    <td>:</td>
-    <td>${ruangSidang}</td>
-  </tr>
-</table>
-
-<p class="body-text-indent">
-  Demikian surat tugas ini dibuat untuk dapat dilaksanakan dengan sebaik-baiknya dan penuh
-  tanggung jawab. Setelah selesai, dimohon agar melaporkan hasilnya kepada Dekan.
-</p>
-
-<div class="signature-section mt-20">
-  <p class="signature-text">Dikeluarkan di Serang</p>
-  <p class="signature-text">Pada Tanggal: ${tanggalSurat}</p>
-  <p class="signature-text">a.n. Dekan</p>
-  <p class="signature-text">Wakil Dekan Bidang Akademik dan Kelembagaan</p>
-  <div class="signature-space">${ttdHtml}</div>
-  <p class="signature-text text-bold" style="text-decoration:underline;">${wd1Nama}</p>
-  <p class="signature-text">NIP. ${wd1Nip}</p>
-</div>
-<div class="clear"></div>
-
-<div class="catatan-section" style="margin-top:15px; border-top:1px solid #ddd; padding-top:8px;">
-  <p><strong>Catatan:</strong></p>
-  <p><strong>Untuk Dewan Penguji:</strong></p>
-  <ol>
-    <li>Dewan penguji diharapkan hadir 15 menit sebelum ujian dimulai.</li>
-    <li>Berita Acara dan Form penilaian harap diisi sesuai komponen yang diujikan.</li>
-    <li>Hasil ujian diserahkan kepada panitia setelah ujian selesai.</li>
-  </ol>
-  <p><strong>Untuk Mahasiswa:</strong></p>
-  <ol>
-    <li>Mahasiswa diharapkan hadir 30 menit sebelum ujian dimulai.</li>
-    <li>Mahasiswa wajib berpakaian rapi dan sopan (kemeja putih, celana/rok hitam, almamater).</li>
-    <li>Mahasiswa wajib membawa perlengkapan ujian (alat tulis, dll).</li>
-    <li>Mahasiswa wajib menyiapkan materi sesuai komponen yang diujikan.</li>
-  </ol>
-</div>
-
-${renderFooter(qrHtml)}
-</div>
-
-<!-- ==================== PAGE 2: BERITA ACARA KEPUTUSAN SIDANG ==================== -->
-<div class="page" style="position:relative;">
-${renderKopSurat(ctx.logo_src)}
-
-<div class="page-form-no">Form I K</div>
-
-<div class="title-section">
-  <p class="title-underline">Berita Acara Keputusan Sidang &mdash;<br>UJIAN KOMPREHENSIP</p>
-</div>
-
-<table class="data-table" style="margin-left:30px;">
-  <tr>
-    <td class="label-col">Nama Mahasiswa</td>
-    <td class="sep-col">:</td>
-    <td>${namaMhs}</td>
-  </tr>
-  <tr>
-    <td>NIM</td>
-    <td>:</td>
-    <td>${nimMhs}</td>
-  </tr>
-  <tr>
-    <td>Semester</td>
-    <td>:</td>
-    <td>${semesterAktif}</td>
-  </tr>
-  <tr>
-    <td>Jurusan</td>
-    <td>:</td>
-    <td>${namaProdi}</td>
-  </tr>
-  <tr>
-    <td>Fakultas</td>
-    <td>:</td>
-    <td>Ushuluddin dan Adab</td>
-  </tr>
-  <tr>
-    <td>Tahun Akademik</td>
-    <td>:</td>
-    <td>${tahunAkademik}</td>
-  </tr>
-  <tr>
-    <td>Nilai</td>
-    <td>:</td>
-    <td>
-      <span class="bordered-cell">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
-    </td>
-  </tr>
-</table>
-
-<div class="section-title">KEPUTUSAN DEWAN PENGUJI</div>
-
-<table class="data-table" style="margin-left:20px;">
-  <tr>
-    <td class="checkbox-cell">
-      [&emsp;&emsp;]
-    </td>
-    <td><strong>LULUS</strong></td>
-    <td style="width:30px;"></td>
-    <td class="checkbox-cell">
-      [&emsp;&emsp;]
-    </td>
-    <td><strong>TIDAK LULUS</strong></td>
-  </tr>
-</table>
-
-<p class="text-center" style="margin:8px 0; font-size:9pt;">
-  *<span class="text-italic">coret yang tidak perlu</span>
-</p>
-
-<table class="data-table" style="margin-left:20px; margin-top:15px;">
-  <tr>
-    <td>Serang,</td>
-    <td>${tanggalSidang}</td>
-  </tr>
-</table>
-
-<table class="sig-table" style="margin-top:5px;">
-  <tr>
-    <th class="text-center" style="width:50%;">DEWAN PENGUJI</th>
-    <th class="text-center" style="width:50%;"></th>
-  </tr>
-  <tr style="height:90px;">
-    <td class="text-center" style="vertical-align:bottom;">
-      <div class="sig-line">
-        <strong>1. Penguji Keahlian Prodi</strong><br>
-        <span style="text-decoration:underline;display:inline-block;min-width:180px;">&nbsp;</span><br>
-        ${penguji1Nama}
-      </div>
-    </td>
-    <td class="text-center" style="vertical-align:bottom;">
-      <div class="sig-line">
-        <strong>2. Penguji Keislaman</strong><br>
-        <span style="text-decoration:underline;display:inline-block;min-width:180px;">&nbsp;</span><br>
-        ${penguji2Nama}
-      </div>
-    </td>
-  </tr>
-</table>
-
-<div class="section-title" style="margin-top:20px;">KETERANGAN NILAI</div>
-
-<table class="keterangan-table">
-  <thead>
-    <tr>
-      <th>NILAI</th>
-      <th>RENTANG</th>
-      <th>NILAI</th>
-      <th>RENTANG</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>A</td><td>95 &ndash; 100</td>
-      <td>B&minus;</td><td>75 &ndash; 79</td>
-    </tr>
-    <tr>
-      <td>A&minus;</td><td>90 &ndash; 94</td>
-      <td>C+</td><td>70 &ndash; 74</td>
-    </tr>
-    <tr>
-      <td>B+</td><td>85 &ndash; 89</td>
-      <td>C</td><td>65 &ndash; 69</td>
-    </tr>
-    <tr>
-      <td>B</td><td>80 &ndash; 84</td>
-      <td>D</td><td>60 &ndash; 64</td>
-    </tr>
-    <tr>
-      <td></td><td></td>
-      <td>E</td><td>&lt; 60</td>
-    </tr>
-  </tbody>
-</table>
-</div>
-
-<!-- ==================== PAGE 3: REKAPITULASI NILAI KOMPREHENSIP ==================== -->
-<div class="page" style="position:relative;">
-${renderKopSurat(ctx.logo_src)}
-
-<div class="page-form-no">Form II K</div>
-
-<div class="title-section">
-  <p class="title-underline">REKAPITULASI NILAI KOMPREHENSIP</p>
-</div>
-
-<table class="data-table" style="margin-left:20px;">
-  <tr>
-    <td colspan="3"><strong>A. IDENTITAS MAHASISWA</strong></td>
-  </tr>
-  <tr>
-    <td class="label-col">Nama</td>
-    <td class="sep-col">:</td>
-    <td>${namaMhs}</td>
-  </tr>
-  <tr>
-    <td>NIM</td>
-    <td>:</td>
-    <td>${nimMhs}</td>
-  </tr>
-  <tr>
-    <td>Semester</td>
-    <td>:</td>
-    <td>${semesterAktif}</td>
-  </tr>
-  <tr>
-    <td>Jurusan</td>
-    <td>:</td>
-    <td>${namaProdi}</td>
-  </tr>
-  <tr>
-    <td>Fakultas</td>
-    <td>:</td>
-    <td>Ushuluddin dan Adab</td>
-  </tr>
-  <tr>
-    <td>Tahun Akademik</td>
-    <td>:</td>
-    <td>${tahunAkademik}</td>
-  </tr>
-</table>
-
-<table class="data-table" style="margin-left:20px; margin-top:10px;">
-  <tr>
-    <td colspan="3"><strong>B. IDENTITAS PENGUJI</strong></td>
-  </tr>
-  <tr>
-    <td class="label-col">Penguji I (Keahlian Prodi)</td>
-    <td class="sep-col">:</td>
-    <td>${penguji1Nama}</td>
-  </tr>
-  <tr>
-    <td>Penguji II (Keislaman)</td>
-    <td>:</td>
-    <td>${penguji2Nama}</td>
-  </tr>
-</table>
-
-<div class="section-title">C. NILAI AKHIR UJIAN KOMPREHENSIP</div>
-
-<table class="bordered-table" style="margin-top:5px;">
-  <thead>
-    <tr>
-      <th style="width:25px;">NO</th>
-      <th>KOMPONEN</th>
-      <th style="width:100px;">NILAI</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td class="text-center">1</td>
-      <td>Penguasaan Komponen Dasar Keilmuan Prodi (X1)</td>
-      <td class="text-center">${placeholder(null, "X1")}</td>
-    </tr>
-    <tr>
-      <td class="text-center">2</td>
-      <td>Penguasaan Komponen Pendukung (Keislaman) (X2)</td>
-      <td class="text-center">${placeholder(null, "X2")}</td>
-    </tr>
-    <tr>
-      <td colspan="2" class="text-center text-bold"><strong>NILAI AKHIR KOMPREHENSIP (P)</strong></td>
-      <td class="text-center text-bold"><strong>${placeholder(null, "P")}</strong></td>
-    </tr>
-  </tbody>
-</table>
-
-<p class="text-center" style="margin:8px 0;">
-  <strong>P = (X1 + X2) / 2</strong>
-</p>
-
-<table class="sig-table">
-  <tr>
-    <th class="text-center" style="width:50%;">Penguji I (Keahlian Prodi)</th>
-    <th class="text-center" style="width:50%;">Penguji II (Keislaman)</th>
-  </tr>
-  <tr style="height:90px;">
-    <td class="text-center" style="vertical-align:bottom;">
-      <div class="sig-line">
-        <span style="text-decoration:underline;display:inline-block;min-width:180px;">&nbsp;</span><br>
-        ${penguji1Nama}
-      </div>
-    </td>
-    <td class="text-center" style="vertical-align:bottom;">
-      <div class="sig-line">
-        <span style="text-decoration:underline;display:inline-block;min-width:180px;">&nbsp;</span><br>
-        ${penguji2Nama}
-      </div>
-    </td>
-  </tr>
-</table>
-
-<div style="margin-top:10px;">
-  <table class="data-table" style="margin-left:20px;">
-    <tr>
-      <td>Serang,</td>
-      <td>${tanggalSidang}</td>
-    </tr>
-    <tr>
-      <td colspan="2">Mengetahui,</td>
-    </tr>
-    <tr>
-      <td colspan="2">a.n. Dekan</td>
-    </tr>
-    <tr>
-      <td colspan="2">Wakil Dekan Bidang Akademik dan Kelembagaan</td>
-    </tr>
-  </table>
-
-  <div class="signature-section" style="margin-top:10px;">
-    <div class="signature-space">${ttdHtml}</div>
-    <p class="signature-text text-bold" style="text-decoration:underline;">${wd1Nama}</p>
-    <p class="signature-text">NIP. ${wd1Nip}</p>
-  </div>
-  <div class="clear"></div>
-</div>
-
+const KETERANGAN_NILAI_TABLE = `
 <div class="section-title" style="margin-top:15px; border-top:1px solid #ddd; padding-top:8px;">KETERANGAN NILAI</div>
 
 <table class="keterangan-table">
@@ -795,7 +418,389 @@ ${renderKopSurat(ctx.logo_src)}
       <td>E</td><td>&lt; 60</td>
     </tr>
   </tbody>
+</table>`;
+
+export function renderUjianKomprehensifSuratTugas(ctx: DocumentContext): string {
+  const v = sharedVars(ctx);
+
+  return `<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Ujian Komprehensif - Surat Tugas</title>
+<style>${PAGE_STYLES}</style>
+</head>
+<body>
+
+<!-- ==================== PAGE 1: SURAT TUGAS ==================== -->
+<div class="page">
+${renderKopSurat(ctx.logo_src)}
+
+<div class="title-section">
+  <p class="title-underline">SURAT TUGAS</p>
+  <p class="nomor-surat">NOMOR: ${v.nomorSurat}</p>
+</div>
+
+<p class="body-text-indent">
+  Dekan Fakultas Ushuluddin dan Adab UIN Sultan Maulana Hasanuddin Banten menugaskan kepada
+  dosen-dosen Fakultas Ushuluddin dan Adab sebagai berikut:
+</p>
+
+<table class="bordered-table">
+  <thead>
+    <tr>
+      <th style="width:25px;">NO</th>
+      <th>NAMA / NIM / JURUSAN</th>
+      <th>DEWAN PENGUJI</th>
+      <th style="width:120px;">WAKTU / RUANG</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="text-center">1</td>
+      <td style="font-size:9pt;">
+        ${v.namaMhs}<br>
+        NIM. ${v.nimMhs}<br>
+        ${v.namaProdi}
+      </td>
+      <td style="font-size:9pt;">
+        <strong>Materi Keahlian Prodi:</strong><br>
+        ${v.penguji1Nama}<br><br>
+        <strong>Materi Keislaman:</strong><br>
+        ${v.penguji2Nama}
+      </td>
+      <td style="font-size:8pt;">
+        Hari/tgl : ${v.hariSidang}, ${v.tanggalSidang}<br>
+        Waktu &emsp;: ${v.waktuSidang}<br>
+        Ruang &ensp;: ${v.ruangSidang}
+      </td>
+    </tr>
+  </tbody>
 </table>
+
+<p class="body-text-indent">
+  Untuk melaksanakan Ujian Komprehensif TA. ${v.tahunAkademik} pada:
+</p>
+
+<table class="data-table" style="margin-left:30px;">
+  <tr>
+    <td class="label-col">Hari / Tanggal</td>
+    <td class="sep-col">:</td>
+    <td>${v.hariSidang}, ${v.tanggalSidang}</td>
+  </tr>
+  <tr>
+    <td>Waktu</td>
+    <td>:</td>
+    <td>${v.waktuSidang}</td>
+  </tr>
+  <tr>
+    <td>Tempat / Ruang</td>
+    <td>:</td>
+    <td>${v.ruangSidang}</td>
+  </tr>
+</table>
+
+<p class="body-text-indent">
+  Demikian surat tugas ini dibuat untuk dapat dilaksanakan dengan sebaik-baiknya dan penuh
+  tanggung jawab. Setelah selesai, dimohon agar melaporkan hasilnya kepada Dekan.
+</p>
+
+<div class="signature-section mt-20">
+  <p class="signature-text">Dikeluarkan di Serang</p>
+  <p class="signature-text">Pada Tanggal: ${v.tanggalSurat}</p>
+  <p class="signature-text">a.n. Dekan</p>
+  <p class="signature-text">Wakil Dekan Bidang Akademik dan Kelembagaan</p>
+  <div class="signature-space">${v.ttdHtml}</div>
+  <p class="signature-text text-bold" style="text-decoration:underline;">${v.wd1Nama}</p>
+  <p class="signature-text">NIP. ${v.wd1Nip}</p>
+</div>
+<div class="clear"></div>
+
+<div class="catatan-section" style="margin-top:15px; border-top:1px solid #ddd; padding-top:8px;">
+  <p><strong>Catatan:</strong></p>
+  <p><strong>Untuk Dewan Penguji:</strong></p>
+  <ol>
+    <li>Dewan penguji diharapkan hadir 15 menit sebelum ujian dimulai.</li>
+    <li>Berita Acara dan Form penilaian harap diisi sesuai komponen yang diujikan.</li>
+    <li>Hasil ujian diserahkan kepada panitia setelah ujian selesai.</li>
+  </ol>
+  <p><strong>Untuk Mahasiswa:</strong></p>
+  <ol>
+    <li>Mahasiswa diharapkan hadir 30 menit sebelum ujian dimulai.</li>
+    <li>Mahasiswa wajib berpakaian rapi dan sopan (kemeja putih, celana/rok hitam, almamater).</li>
+    <li>Mahasiswa wajib membawa perlengkapan ujian (alat tulis, dll).</li>
+    <li>Mahasiswa wajib menyiapkan materi sesuai komponen yang diujikan.</li>
+  </ol>
+</div>
+
+${renderFooter(v.qrHtml)}
+</div>
+
+</body>
+</html>`;
+}
+
+export function renderUjianKomprehensifBeritaAcara(ctx: DocumentContext): string {
+  const v = sharedVars(ctx);
+
+  const keputusanLulus = ctx.keputusan_sidang === "lulus" || ctx.keputusan_sidang === "layak";
+  const keputusanTidakLulus = ctx.keputusan_sidang === "tidak_lulus" || ctx.keputusan_sidang === "tidak_layak";
+  const lulusCheckbox = keputusanLulus ? "[&#x2713;]" : "[&emsp;&emsp;]";
+  const tidakLulusCheckbox = keputusanTidakLulus ? "[&#x2713;]" : "[&emsp;&emsp;]";
+
+  const x1Display = ctx.x1_komprehensif != null ? String(ctx.x1_komprehensif) : placeholder(null, "X1");
+  const x2Display = ctx.x2_komprehensif != null ? String(ctx.x2_komprehensif) : placeholder(null, "X2");
+  const nilaiAkhirDisplay = ctx.nilai_akhir != null ? String(ctx.nilai_akhir) : placeholder(null, "P");
+
+  return `<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Ujian Komprehensif - Berita Acara</title>
+<style>${PAGE_STYLES}</style>
+</head>
+<body>
+
+<!-- ==================== PAGE 2: BERITA ACARA KEPUTUSAN SIDANG ==================== -->
+<div class="page" style="position:relative;">
+${renderKopSurat(ctx.logo_src)}
+
+<div class="page-form-no">Form I K</div>
+
+<div class="title-section">
+  <p class="title-underline">Berita Acara Keputusan Sidang &mdash;<br>UJIAN KOMPREHENSIP</p>
+</div>
+
+<table class="data-table" style="margin-left:30px;">
+  <tr>
+    <td class="label-col">Nama Mahasiswa</td>
+    <td class="sep-col">:</td>
+    <td>${v.namaMhs}</td>
+  </tr>
+  <tr>
+    <td>NIM</td>
+    <td>:</td>
+    <td>${v.nimMhs}</td>
+  </tr>
+  <tr>
+    <td>Semester</td>
+    <td>:</td>
+    <td>${v.semesterAktif}</td>
+  </tr>
+  <tr>
+    <td>Jurusan</td>
+    <td>:</td>
+    <td>${v.namaProdi}</td>
+  </tr>
+  <tr>
+    <td>Fakultas</td>
+    <td>:</td>
+    <td>Ushuluddin dan Adab</td>
+  </tr>
+  <tr>
+    <td>Tahun Akademik</td>
+    <td>:</td>
+    <td>${v.tahunAkademik}</td>
+  </tr>
+  <tr>
+    <td>Nilai</td>
+    <td>:</td>
+    <td>
+      <span class="bordered-cell">&nbsp;${nilaiAkhirDisplay}&nbsp;</span>
+    </td>
+  </tr>
+</table>
+
+<div class="section-title">KEPUTUSAN DEWAN PENGUJI</div>
+
+<table class="data-table" style="margin-left:20px;">
+  <tr>
+    <td class="checkbox-cell">
+      ${lulusCheckbox}
+    </td>
+    <td><strong>LULUS</strong></td>
+    <td style="width:30px;"></td>
+    <td class="checkbox-cell">
+      ${tidakLulusCheckbox}
+    </td>
+    <td><strong>TIDAK LULUS</strong></td>
+  </tr>
+</table>
+
+<table class="data-table" style="margin-left:20px; margin-top:15px;">
+  <tr>
+    <td>Serang,</td>
+    <td>${v.tanggalSidang}</td>
+  </tr>
+</table>
+
+<table class="sig-table" style="margin-top:5px;">
+  <tr>
+    <th class="text-center" style="width:50%;">DEWAN PENGUJI</th>
+    <th class="text-center" style="width:50%;"></th>
+  </tr>
+  <tr style="height:90px;">
+    <td class="text-center" style="vertical-align:bottom;">
+      <div class="sig-line">
+        <strong>1. Penguji Keahlian Prodi</strong><br>
+        <span style="text-decoration:underline;display:inline-block;min-width:180px;">&nbsp;</span><br>
+        ${v.penguji1Nama}
+      </div>
+    </td>
+    <td class="text-center" style="vertical-align:bottom;">
+      <div class="sig-line">
+        <strong>2. Penguji Keislaman</strong><br>
+        <span style="text-decoration:underline;display:inline-block;min-width:180px;">&nbsp;</span><br>
+        ${v.penguji2Nama}
+      </div>
+    </td>
+  </tr>
+</table>
+
+${KETERANGAN_NILAI_TABLE}
+</div>
+
+<!-- ==================== PAGE 3: REKAPITULASI NILAI KOMPREHENSIP ==================== -->
+<div class="page" style="position:relative;">
+${renderKopSurat(ctx.logo_src)}
+
+<div class="page-form-no">Form II K</div>
+
+<div class="title-section">
+  <p class="title-underline">REKAPITULASI NILAI KOMPREHENSIP</p>
+</div>
+
+<table class="data-table" style="margin-left:20px;">
+  <tr>
+    <td colspan="3"><strong>A. IDENTITAS MAHASISWA</strong></td>
+  </tr>
+  <tr>
+    <td class="label-col">Nama</td>
+    <td class="sep-col">:</td>
+    <td>${v.namaMhs}</td>
+  </tr>
+  <tr>
+    <td>NIM</td>
+    <td>:</td>
+    <td>${v.nimMhs}</td>
+  </tr>
+  <tr>
+    <td>Semester</td>
+    <td>:</td>
+    <td>${v.semesterAktif}</td>
+  </tr>
+  <tr>
+    <td>Jurusan</td>
+    <td>:</td>
+    <td>${v.namaProdi}</td>
+  </tr>
+  <tr>
+    <td>Fakultas</td>
+    <td>:</td>
+    <td>Ushuluddin dan Adab</td>
+  </tr>
+  <tr>
+    <td>Tahun Akademik</td>
+    <td>:</td>
+    <td>${v.tahunAkademik}</td>
+  </tr>
+</table>
+
+<table class="data-table" style="margin-left:20px; margin-top:10px;">
+  <tr>
+    <td colspan="3"><strong>B. IDENTITAS PENGUJI</strong></td>
+  </tr>
+  <tr>
+    <td class="label-col">Penguji I (Keahlian Prodi)</td>
+    <td class="sep-col">:</td>
+    <td>${v.penguji1Nama}</td>
+  </tr>
+  <tr>
+    <td>Penguji II (Keislaman)</td>
+    <td>:</td>
+    <td>${v.penguji2Nama}</td>
+  </tr>
+</table>
+
+<div class="section-title">C. NILAI AKHIR UJIAN KOMPREHENSIP</div>
+
+<table class="bordered-table" style="margin-top:5px;">
+  <thead>
+    <tr>
+      <th style="width:25px;">NO</th>
+      <th>KOMPONEN</th>
+      <th style="width:100px;">NILAI</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="text-center">1</td>
+      <td>Penguasaan Komponen Dasar Keilmuan Prodi (X1)</td>
+      <td class="text-center">${x1Display}</td>
+    </tr>
+    <tr>
+      <td class="text-center">2</td>
+      <td>Penguasaan Komponen Pendukung (Keislaman) (X2)</td>
+      <td class="text-center">${x2Display}</td>
+    </tr>
+    <tr>
+      <td colspan="2" class="text-center text-bold"><strong>NILAI AKHIR KOMPREHENSIP (P)</strong></td>
+      <td class="text-center text-bold"><strong>${nilaiAkhirDisplay}</strong></td>
+    </tr>
+  </tbody>
+</table>
+
+<p class="text-center" style="margin:8px 0;">
+  <strong>P = (X1 + X2) / 2</strong>
+</p>
+
+<table class="sig-table">
+  <tr>
+    <th class="text-center" style="width:50%;">Penguji I (Keahlian Prodi)</th>
+    <th class="text-center" style="width:50%;">Penguji II (Keislaman)</th>
+  </tr>
+  <tr style="height:90px;">
+    <td class="text-center" style="vertical-align:bottom;">
+      <div class="sig-line">
+        <span style="text-decoration:underline;display:inline-block;min-width:180px;">&nbsp;</span><br>
+        ${v.penguji1Nama}
+      </div>
+    </td>
+    <td class="text-center" style="vertical-align:bottom;">
+      <div class="sig-line">
+        <span style="text-decoration:underline;display:inline-block;min-width:180px;">&nbsp;</span><br>
+        ${v.penguji2Nama}
+      </div>
+    </td>
+  </tr>
+</table>
+
+<div style="margin-top:10px;">
+  <table class="data-table" style="margin-left:20px;">
+    <tr>
+      <td>Serang,</td>
+      <td>${v.tanggalSidang}</td>
+    </tr>
+    <tr>
+      <td colspan="2">Mengetahui,</td>
+    </tr>
+    <tr>
+      <td colspan="2">a.n. Dekan</td>
+    </tr>
+    <tr>
+      <td colspan="2">Wakil Dekan Bidang Akademik dan Kelembagaan</td>
+    </tr>
+  </table>
+
+  <div class="signature-section" style="margin-top:10px;">
+    <div class="signature-space">${v.ttdHtml}</div>
+    <p class="signature-text text-bold" style="text-decoration:underline;">${v.wd1Nama}</p>
+    <p class="signature-text">NIP. ${v.wd1Nip}</p>
+  </div>
+  <div class="clear"></div>
+</div>
+
+${KETERANGAN_NILAI_TABLE}
 </div>
 
 <!-- ==================== PAGE 4: NILAI UJIAN KOMPREHENSIP (Komponen Dasar) ==================== -->
@@ -813,22 +818,22 @@ ${renderKopSurat(ctx.logo_src)}
   <tr>
     <td class="label-col">Nama Mahasiswa</td>
     <td class="sep-col">:</td>
-    <td>${namaMhs}</td>
+    <td>${v.namaMhs}</td>
   </tr>
   <tr>
     <td>NIM</td>
     <td>:</td>
-    <td>${nimMhs}</td>
+    <td>${v.nimMhs}</td>
   </tr>
   <tr>
     <td>Semester</td>
     <td>:</td>
-    <td>${semesterAktif}</td>
+    <td>${v.semesterAktif}</td>
   </tr>
   <tr>
     <td>Jurusan</td>
     <td>:</td>
-    <td>${namaProdi} (${kodeProdi})</td>
+    <td>${v.namaProdi} (${v.kodeProdi})</td>
   </tr>
   <tr>
     <td>Fakultas</td>
@@ -838,22 +843,22 @@ ${renderKopSurat(ctx.logo_src)}
   <tr>
     <td>Tahun Akademik</td>
     <td>:</td>
-    <td>${tahunAkademik}</td>
+    <td>${v.tahunAkademik}</td>
   </tr>
   <tr>
     <td>Hari / Tanggal</td>
     <td>:</td>
-    <td>${hariSidang}, ${tanggalSidang}</td>
+    <td>${v.hariSidang}, ${v.tanggalSidang}</td>
   </tr>
   <tr>
     <td>Waktu</td>
     <td>:</td>
-    <td>${waktuSidang}</td>
+    <td>${v.waktuSidang}</td>
   </tr>
   <tr>
     <td>Ruang</td>
     <td>:</td>
-    <td>${ruangSidang}</td>
+    <td>${v.ruangSidang}</td>
   </tr>
 </table>
 
@@ -906,7 +911,7 @@ ${renderKopSurat(ctx.logo_src)}
   <tr>
     <td style="width:60%;">
       <table class="data-table">
-        <tr><td>Serang,</td><td>${tanggalSidang}</td></tr>
+        <tr><td>Serang,</td><td>${v.tanggalSidang}</td></tr>
       </table>
     </td>
     <td style="width:40%; text-align:center;">
@@ -917,7 +922,7 @@ ${renderKopSurat(ctx.logo_src)}
     <td class="text-center" style="vertical-align:bottom;">
       <strong>Penguji Materi Keahlian Prodi</strong><br>
       <span style="text-decoration:underline;display:inline-block;min-width:180px;">&nbsp;</span><br>
-      ${penguji1Nama}
+      ${v.penguji1Nama}
     </td>
   </tr>
 </table>
@@ -938,22 +943,22 @@ ${renderKopSurat(ctx.logo_src)}
   <tr>
     <td class="label-col">Nama Mahasiswa</td>
     <td class="sep-col">:</td>
-    <td>${namaMhs}</td>
+    <td>${v.namaMhs}</td>
   </tr>
   <tr>
     <td>NIM</td>
     <td>:</td>
-    <td>${nimMhs}</td>
+    <td>${v.nimMhs}</td>
   </tr>
   <tr>
     <td>Semester</td>
     <td>:</td>
-    <td>${semesterAktif}</td>
+    <td>${v.semesterAktif}</td>
   </tr>
   <tr>
     <td>Jurusan</td>
     <td>:</td>
-    <td>${namaProdi} (${kodeProdi})</td>
+    <td>${v.namaProdi} (${v.kodeProdi})</td>
   </tr>
   <tr>
     <td>Fakultas</td>
@@ -963,22 +968,22 @@ ${renderKopSurat(ctx.logo_src)}
   <tr>
     <td>Tahun Akademik</td>
     <td>:</td>
-    <td>${tahunAkademik}</td>
+    <td>${v.tahunAkademik}</td>
   </tr>
   <tr>
     <td>Hari / Tanggal</td>
     <td>:</td>
-    <td>${hariSidang}, ${tanggalSidang}</td>
+    <td>${v.hariSidang}, ${v.tanggalSidang}</td>
   </tr>
   <tr>
     <td>Waktu</td>
     <td>:</td>
-    <td>${waktuSidang}</td>
+    <td>${v.waktuSidang}</td>
   </tr>
   <tr>
     <td>Ruang</td>
     <td>:</td>
-    <td>${ruangSidang}</td>
+    <td>${v.ruangSidang}</td>
   </tr>
 </table>
 
@@ -1031,7 +1036,7 @@ ${renderKopSurat(ctx.logo_src)}
   <tr>
     <td style="width:60%;">
       <table class="data-table">
-        <tr><td>Serang,</td><td>${tanggalSidang}</td></tr>
+        <tr><td>Serang,</td><td>${v.tanggalSidang}</td></tr>
       </table>
     </td>
     <td style="width:40%; text-align:center;">
@@ -1042,7 +1047,7 @@ ${renderKopSurat(ctx.logo_src)}
     <td class="text-center" style="vertical-align:bottom;">
       <strong>Penguji Materi Keislaman</strong><br>
       <span style="text-decoration:underline;display:inline-block;min-width:180px;">&nbsp;</span><br>
-      ${penguji2Nama}
+      ${v.penguji2Nama}
     </td>
   </tr>
 </table>
@@ -1050,4 +1055,9 @@ ${renderKopSurat(ctx.logo_src)}
 
 </body>
 </html>`;
+}
+
+// Keep original for backward compat
+export function renderUjianKomprehensif(ctx: DocumentContext): string {
+  return renderUjianKomprehensifSuratTugas(ctx);
 }
