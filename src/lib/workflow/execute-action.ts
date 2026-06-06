@@ -231,24 +231,24 @@ export async function executeWorkflowAction(input: {
       entity_id: pengajuan.id,
     }).catch(() => {});
 
-    const TA_SIDANG = ["TA-03", "TA-04", "TA-05"] as const;
-    if (TA_SIDANG.includes(pengajuan.jenis_layanan.kode as (typeof TA_SIDANG)[number])) {
-      prisma.penomoranCounter
-        .findFirst({
-          where: { pengajuan_id: pengajuan.id, status: { in: ["reserved", "active"] } },
-          orderBy: { reserved_at: "desc" },
-        })
-        .catch(() => null)
-        .then((penomoran) => {
-          generateAndStoreDokumen({
-            pengajuanId: pengajuan.id,
-            layananKode: pengajuan.jenis_layanan.kode,
-            jenis: "surat_tugas",
-            signedBy: userId,
-            nomorSurat: penomoran?.nomor_formatted ?? undefined,
-          }).catch((err) => console.error(`[Phase1PDF] pengajuan ${pengajuan.id}:`, err));
-        });
-    }
+    // Generate surat_tugas untuk semua layanan.
+    // TA-03/04/05: ini Phase 1; Phase 2 (berita_acara) di-generate di nilai.ts setelah nilai input.
+    // Layanan lain: ini satu-satunya dokumen final.
+    prisma.penomoranCounter
+      .findFirst({
+        where: { pengajuan_id: pengajuan.id, status: { in: ["reserved", "active"] } },
+        orderBy: { reserved_at: "desc" },
+      })
+      .catch(() => null)
+      .then((penomoran) => {
+        generateAndStoreDokumen({
+          pengajuanId: pengajuan.id,
+          layananKode: pengajuan.jenis_layanan.kode,
+          jenis: "surat_tugas",
+          signedBy: userId,
+          nomorSurat: penomoran?.nomor_formatted ?? undefined,
+        }).catch((err) => console.error(`[FinalPDF] pengajuan ${pengajuan.id}:`, err));
+      });
   }
 
   if ((input.action === "approve" || input.action === "select_judul") && nextStepCode) {
