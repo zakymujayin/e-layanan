@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { StatusBadge } from "@/components/pengajuan/StatusBadge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileText } from "lucide-react";
+import { FileText, Download } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
@@ -72,7 +72,7 @@ export default async function SuratSayaPage() {
           mahasiswa: true,
           dokumen_output: {
             where: { is_final: true },
-            take: 1,
+            orderBy: { finalized_at: "desc" },
           },
         },
       },
@@ -146,8 +146,40 @@ export default async function SuratSayaPage() {
                               </p>
                             )}
                           </div>
-                          <div className="flex items-center gap-2 shrink-0">
+                          <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
                             {pengajuan && <StatusBadge status={pengajuan.status} />}
+                            {pengajuan && pengajuan.status === "selesai" &&
+                              pengajuan.dokumen_output &&
+                              pengajuan.dokumen_output.length > 0
+                              ? pengajuan.dokumen_output.map((dok) => (
+                                  <Link
+                                    key={dok.id}
+                                    href={`/api/pengajuan/${pengajuan.id}/pdf?mode=final&jenis=${
+                                      dok.jenis_dokumen === "Surat Tugas"
+                                        ? "surat_tugas"
+                                        : "berita_acara"
+                                    }`}
+                                    target="_blank"
+                                    className={buttonVariants({ variant: "outline", size: "sm" })}
+                                  >
+                                    <Download className="mr-1.5 h-4 w-4" />
+                                    {dok.jenis_dokumen === "Surat Tugas"
+                                      ? "Surat Tugas"
+                                      : "Berita Acara"}
+                                  </Link>
+                                ))
+                              : pengajuan && pengajuan.status === "selesai"
+                              ? (
+                                  <Link
+                                    href={`/api/pengajuan/${pengajuan.id}/pdf?mode=final`}
+                                    target="_blank"
+                                    className={buttonVariants({ variant: "outline", size: "sm" })}
+                                  >
+                                    <Download className="mr-1.5 h-4 w-4" />
+                                    Unduh
+                                  </Link>
+                                )
+                              : null}
                             {pengajuan && (
                               <Link
                                 href={`/pengajuan/${pengajuan.id}`}

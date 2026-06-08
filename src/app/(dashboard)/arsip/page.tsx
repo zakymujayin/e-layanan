@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -28,44 +28,48 @@ export default async function ArsipPage() {
     const positions = await prisma.structuralPosition.findMany({
       where: { dosen_id: user.dosen.id, is_active: true },
     });
-    structuralPositions = positions.map(p => p.position_code);
+    structuralPositions = positions.map((p) => p.position_code);
   }
 
   const effectiveRoles = [baseRole, ...structuralPositions];
 
-  // Build scope for dokumen_output
-  let pengajuanWhere: any = { status: "selesai" };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const pengajuanWhere: any = { status: "selesai" };
 
   if (effectiveRoles.includes("mahasiswa") && user.mahasiswa) {
     pengajuanWhere.mahasiswa_id = user.mahasiswa.id;
   } else if (
     effectiveRoles.includes("dosen") &&
     user.dosen &&
-    !effectiveRoles.some(r => ["kaprodi", "sekprodi", "wakil_dekan_1", "dekan"].includes(r))
+    !effectiveRoles.some((r) =>
+      ["kaprodi", "sekprodi", "wakil_dekan_1", "dekan"].includes(r)
+    )
   ) {
-    pengajuanWhere.assignments = { some: { dosen_id: user.dosen.id, is_active: true } };
+    pengajuanWhere.assignments = {
+      some: { dosen_id: user.dosen.id, is_active: true },
+    };
   } else if (effectiveRoles.includes("staff_prodi")) {
     pengajuanWhere.scope_level = "prodi";
-  } else if (effectiveRoles.includes("staff_akademik") || effectiveRoles.includes("kabag")) {
+  } else if (
+    effectiveRoles.includes("staff_akademik") ||
+    effectiveRoles.includes("kabag")
+  ) {
     pengajuanWhere.scope_level = "fakultas";
   }
-  // WD1, Dekan, super_admin: all selesai
+  // WD1, Dekan, super_admin: semua selesai
 
-  const dokumenList = await prisma.dokumenOutput.findMany({
-    where: {
-      is_final: true,
-      pengajuan: pengajuanWhere,
-    },
+  const selesaiList = await prisma.pengajuanLayanan.findMany({
+    where: pengajuanWhere,
     include: {
-      pengajuan: {
-        include: {
-          jenis_layanan: true,
-          mahasiswa: true,
-        },
+      jenis_layanan: true,
+      mahasiswa: true,
+      dokumen_output: {
+        where: { is_final: true },
+        include: { dokumen_verifikasi: true },
+        orderBy: { finalized_at: "desc" },
       },
-      dokumen_verifikasi: true,
     },
-    orderBy: { finalized_at: "desc" },
+    orderBy: { completed_at: "desc" },
     take: 100,
   });
 
@@ -76,11 +80,12 @@ export default async function ArsipPage() {
       <div>
         <h1 className="text-2xl font-bold">Arsip Dokumen</h1>
         <p className="text-muted-foreground">
-          {dokumenList.length} dokumen tersedia · Hanya dokumen final yang ditampilkan
+          {selesaiList.length} layanan selesai · Hanya dokumen final yang
+          ditampilkan
         </p>
       </div>
 
-      {dokumenList.length === 0 ? (
+      {selesaiList.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <Archive className="mb-4 h-12 w-12 text-muted-foreground" />
           <h3 className="text-lg font-semibold">Belum ada arsip dokumen</h3>
@@ -90,63 +95,120 @@ export default async function ArsipPage() {
         </div>
       ) : (
         <div className="space-y-3">
-          {dokumenList.map((dok) => (
-            <Card key={dok.id}>
-              <CardHeader className="py-3">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <Badge variant="outline" className="text-xs font-mono shrink-0">
-                        {dok.pengajuan.jenis_layanan?.kode}
-                      </Badge>
-                      <CardTitle className="text-sm truncate">
-                        {dok.jenis_dokumen}
-                      </CardTitle>
+          {selesaiList.map((p) => {
+            const docs = p.dokumen_output;
+            const dateStr = p.completed_at
+              ? format(p.completed_at, "d MMMM yyyy", { locale: idLocale })
+              : "";
+
+            if (docs.length > 0) {
+              return docs.map((dok) => (
+                <Card key={dok.id}>
+                  <CardHeader className="py-3">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Badge
+                            variant="outline"
+                            className="text-xs font-mono shrink-0"
+                          >
+                            {p.jenis_layanan?.kode}
+                          </Badge>
+                          <CardTitle className="text-sm truncate">
+                            {dok.jenis_dokumen}
+                          </CardTitle>
+                        </div>
+                        {!isMahasiswa && p.mahasiswa && (
+                          <p className="mt-0.5 text-xs text-muted-foreground">
+                            {p.mahasiswa.nama_lengkap} · {p.mahasiswa.nim}
+                          </p>
+                        )}
+                        {dok.nomor_surat && (
+                          <p className="mt-0.5 text-xs font-mono text-muted-foreground">
+                            {dok.nomor_surat}
+                          </p>
+                        )}
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          {dateStr}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {dok.dokumen_verifikasi && (
+                          <Link
+                            href={`/verifikasi?token=${dok.dokumen_verifikasi.token}`}
+                            target="_blank"
+                            title="Verifikasi"
+                            className={cn(
+                              buttonVariants({ variant: "ghost", size: "sm" })
+                            )}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Link>
+                        )}
+                        <Link
+                          href={`/api/pengajuan/${p.id}/pdf?mode=final&jenis=${
+                            dok.jenis_dokumen === "Surat Tugas"
+                              ? "surat_tugas"
+                              : "berita_acara"
+                          }`}
+                          target="_blank"
+                          className={cn(
+                            buttonVariants({ variant: "outline", size: "sm" })
+                          )}
+                        >
+                          <Download className="mr-1.5 h-4 w-4" />
+                          Unduh
+                        </Link>
+                      </div>
                     </div>
-                    {!isMahasiswa && dok.pengajuan.mahasiswa && (
+                  </CardHeader>
+                </Card>
+              ));
+            }
+
+            // Fallback: data lama tanpa DokumenOutput tersimpan
+            return (
+              <Card key={`p-${p.id}`}>
+                <CardHeader className="py-3">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Badge
+                          variant="outline"
+                          className="text-xs font-mono shrink-0"
+                        >
+                          {p.jenis_layanan?.kode}
+                        </Badge>
+                        <CardTitle className="text-sm truncate">
+                          {p.jenis_layanan?.nama}
+                        </CardTitle>
+                      </div>
+                      {!isMahasiswa && p.mahasiswa && (
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          {p.mahasiswa.nama_lengkap} · {p.mahasiswa.nim}
+                        </p>
+                      )}
                       <p className="mt-0.5 text-xs text-muted-foreground">
-                        {dok.pengajuan.mahasiswa.nama_lengkap} · {dok.pengajuan.mahasiswa.nim}
+                        {dateStr}
                       </p>
-                    )}
-                    {dok.nomor_surat && (
-                      <p className="mt-0.5 text-xs font-mono text-muted-foreground">
-                        {dok.nomor_surat}
-                      </p>
-                    )}
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                      {dok.finalized_at
-                        ? format(dok.finalized_at, "d MMMM yyyy", { locale: idLocale })
-                        : format(dok.generated_at, "d MMMM yyyy", { locale: idLocale })}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    {dok.dokumen_verifikasi && (
+                    </div>
+                    <div className="shrink-0">
                       <Link
-                        href={`/verifikasi?token=${dok.dokumen_verifikasi.token}`}
+                        href={`/api/pengajuan/${p.id}/pdf?mode=final`}
                         target="_blank"
-                        title="Verifikasi"
-                        className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Link>
-                    )}
-                    {dok.file_path_final && (
-                      <Link
-                        href={`/api/pengajuan/${dok.pengajuan_id}/pdf?mode=final&jenis=${
-                          dok.jenis_dokumen === "Surat Tugas" ? "surat_tugas" : "berita_acara"
-                        }`}
-                        target="_blank"
-                        className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+                        className={cn(
+                          buttonVariants({ variant: "outline", size: "sm" })
+                        )}
                       >
                         <Download className="mr-1.5 h-4 w-4" />
                         Unduh
                       </Link>
-                    )}
+                    </div>
                   </div>
-                </div>
-              </CardHeader>
-            </Card>
-          ))}
+                </CardHeader>
+              </Card>
+            );
+          })}
         </div>
       )}
     </div>

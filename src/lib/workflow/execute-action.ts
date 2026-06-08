@@ -241,14 +241,15 @@ export async function executeWorkflowAction(input: {
       })
       .catch(() => null)
       .then((penomoran) => {
-        generateAndStoreDokumen({
+        return generateAndStoreDokumen({
           pengajuanId: pengajuan.id,
           layananKode: pengajuan.jenis_layanan.kode,
           jenis: "surat_tugas",
           signedBy: userId,
           nomorSurat: penomoran?.nomor_formatted ?? undefined,
-        }).catch((err) => console.error(`[FinalPDF] pengajuan ${pengajuan.id}:`, err));
-      });
+        });
+      })
+      .catch((err) => console.error(`[SuratTugasPDF] pengajuan ${pengajuan.id}:`, err));
   }
 
   if ((input.action === "approve" || input.action === "select_judul") && nextStepCode) {
