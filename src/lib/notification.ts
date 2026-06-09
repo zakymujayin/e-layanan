@@ -40,7 +40,7 @@ export async function createNotification(input: CreateNotificationInput) {
         })
       );
     })
-    .catch(() => {});
+    .catch((err) => { console.error("[Notification] email dispatch error", err); });
 }
 
 export async function markNotificationRead(notificationId: number) {

@@ -1,21 +1,36 @@
 import nodemailer from "nodemailer";
+import type { Transporter } from "nodemailer";
 import { prisma } from "@/lib/prisma";
 import { decrypt } from "@/lib/crypto";
 
 const BASE_URL = process.env.NEXTAUTH_URL ?? "http://localhost:3003";
 
-async function getSmtpConfig() {
+type CachedSmtp = { transporter: Transporter; from: string } | null;
+let smtpCache: CachedSmtp | undefined = undefined;
+
+async function getSmtp(): Promise<CachedSmtp> {
+  if (smtpCache !== undefined) return smtpCache;
+
   const keys = ["smtp_host", "smtp_port", "smtp_user", "smtp_pass", "smtp_from"];
   const rows = await prisma.appConfig.findMany({ where: { key: { in: keys } } });
   const cfg = Object.fromEntries(rows.map((r) => [r.key, r.value]));
-  if (!cfg.smtp_host || !cfg.smtp_user || !cfg.smtp_pass) return null;
-  return {
-    host: cfg.smtp_host,
-    port: Number(cfg.smtp_port ?? "587"),
-    secure: cfg.smtp_port === "465",
-    auth: { user: cfg.smtp_user, pass: decrypt(cfg.smtp_pass) },
+
+  if (!cfg.smtp_host || !cfg.smtp_user || !cfg.smtp_pass) {
+    smtpCache = null;
+    return null;
+  }
+
+  const port = parseInt(cfg.smtp_port ?? "587", 10) || 587;
+  smtpCache = {
+    transporter: nodemailer.createTransport({
+      host: cfg.smtp_host,
+      port,
+      secure: port === 465,
+      auth: { user: cfg.smtp_user, pass: decrypt(cfg.smtp_pass) },
+    }),
     from: cfg.smtp_from ?? cfg.smtp_user,
   };
+  return smtpCache;
 }
 
 export function buildEmailHtml(opts: {
@@ -43,15 +58,9 @@ export async function sendEmail(
   html: string
 ): Promise<void> {
   try {
-    const cfg = await getSmtpConfig();
-    if (!cfg) return; // SMTP belum dikonfigurasi
-    const transporter = nodemailer.createTransport({
-      host: cfg.host,
-      port: cfg.port,
-      secure: cfg.secure,
-      auth: cfg.auth,
-    });
-    await transporter.sendMail({ from: cfg.from, to, subject, html });
+    const smtp = await getSmtp();
+    if (!smtp) return;
+    await smtp.transporter.sendMail({ from: smtp.from, to, subject, html });
   } catch (err) {
     console.error("[Email] gagal kirim ke", to, err);
   }
