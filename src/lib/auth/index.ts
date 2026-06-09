@@ -1,8 +1,9 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
-import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
+import { authConfig } from "@/lib/auth.config";
+import { isRateLimited } from "@/lib/rate-limit";
 
 async function findUserByIdentifier(identifier: string) {
   return prisma.user.findFirst({
@@ -18,15 +19,23 @@ async function findUserByIdentifier(identifier: string) {
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  adapter: PrismaAdapter(prisma),
-  session: { strategy: "database", maxAge: 7 * 24 * 60 * 60 },
+  ...authConfig,
   providers: [
     Credentials({
       credentials: {
         identifier: { label: "Email/NIM/NIDN/NIP", type: "text" },
         password: { label: "Password", type: "password" },
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
+        const ip =
+          (req as Request)?.headers?.get("x-forwarded-for") ??
+          (req as Request)?.headers?.get("x-real-ip") ??
+          "unknown";
+
+        if (isRateLimited(`login:${ip}`, 5, 60_000)) {
+          throw new Error("ERR_AUTH_RATE_LIMIT: Terlalu banyak percobaan login. Coba lagi dalam 1 menit.");
+        }
+
         const { identifier, password } = credentials as {
           identifier: string;
           password: string;
@@ -41,16 +50,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   callbacks: {
-    async session({ session, user }) {
-      if (session.user) {
-        const dbUser = await prisma.user.findUnique({ where: { id: Number(user.id) } });
-        if (dbUser) {
-          session.user.id = String(dbUser.id);
-          (session.user as any).systemRole = dbUser.system_role;
-        }
+    ...authConfig.callbacks,
+    async jwt({ token, user }) {
+      if (user?.id) {
+        token.id = user.id;
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      if (session.user && token.id) {
+        session.user.id = token.id as string;
       }
       return session;
     },
   },
-  pages: { signIn: "/login" },
 });

@@ -4,7 +4,7 @@ import { renderFooter } from "../partials/footer";
 import { PAGE_CSS, HEADER_CSS, FOOTER_CSS, SIGNATURE_CSS } from "../partials/styles";
 import { placeholder, reserved } from "../partials/placeholder";
 
-export function renderSeminarProposal(ctx: DocumentContext): string {
+function sharedVars(ctx: DocumentContext) {
   const isPreview = ctx.mode === "preview";
 
   const nomorSurat = isPreview
@@ -36,12 +36,16 @@ export function renderSeminarProposal(ctx: DocumentContext): string {
   const pembimbing1 = placeholder(ctx.pembimbing_1, "PEMBIMBING 1");
   const pembimbing2 = placeholder(ctx.pembimbing_2, "PEMBIMBING 2");
 
-  return `<!DOCTYPE html>
-<html lang="id">
-<head>
-<meta charset="UTF-8">
-<title>Surat Tugas Seminar Proposal</title>
-<style>${PAGE_CSS}${HEADER_CSS}${FOOTER_CSS}${SIGNATURE_CSS}
+  return {
+    isPreview, nomorSurat, tanggalSurat,
+    wd1Nama, wd1Nip, ttdHtml, qrHtml,
+    penguji1, penguji2, hari, tgl, waktu, ruang,
+    pembimbing1, pembimbing2,
+  };
+}
+
+function commonStyles(): string {
+  return `${PAGE_CSS}${HEADER_CSS}${FOOTER_CSS}${SIGNATURE_CSS}
   .judul-surat { text-align:center; font-size:12pt; font-weight:bold; text-decoration:underline; margin:10px 0 5px 0; }
   .nomor-surat { text-align:center; margin-bottom:20px; }
   .tabel-info { width:100%; border-collapse:collapse; margin:15px 0; }
@@ -53,7 +57,18 @@ export function renderSeminarProposal(ctx: DocumentContext): string {
   .tabel-kehadiran { width:100%; border-collapse:collapse; margin:15px 0; }
   .tabel-kehadiran th { border:1px solid #000; padding:6px; font-size:11pt; background:#f0f0f0; }
   .tabel-kehadiran td { border:1px solid #000; padding:6px; font-size:11pt; }
-  .checklist { text-align:center; }
+  .checklist { text-align:center; }`;
+}
+
+export function renderSeminarProposalSuratTugas(ctx: DocumentContext): string {
+  const v = sharedVars(ctx);
+
+  return `<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Surat Tugas Seminar Proposal</title>
+<style>${commonStyles()}
 </style>
 </head>
 <body>
@@ -61,7 +76,7 @@ export function renderSeminarProposal(ctx: DocumentContext): string {
 <div class="page">
 ${renderKopSurat(ctx.logo_src)}
 <div class="judul-surat">SURAT TUGAS</div>
-<div class="nomor-surat">Nomor: ${nomorSurat}</div>
+<div class="nomor-surat">Nomor: ${v.nomorSurat}</div>
 
 <p class="paragraf">
   Wakil Dekan Bidang Akademik Fakultas Ushuluddin dan Adab UIN Sultan Maulana Hasanuddin
@@ -72,12 +87,12 @@ ${renderKopSurat(ctx.logo_src)}
   <tr>
     <td style="padding-left:40px;">1. Nama / NIP</td>
     <td>:</td>
-    <td><strong>${penguji1}</strong></td>
+    <td><strong>${v.penguji1}</strong></td>
   </tr>
   <tr>
     <td style="padding-left:40px;">2. Nama / NIP</td>
     <td>:</td>
-    <td><strong>${penguji2}</strong></td>
+    <td><strong>${v.penguji2}</strong></td>
   </tr>
 </table>
 
@@ -88,15 +103,15 @@ ${renderKopSurat(ctx.logo_src)}
 <table class="tabel-info">
   <tr>
     <td style="padding-left:40px;">Hari / Tanggal</td>
-    <td>:</td><td><strong>${hari}, ${tgl}</strong></td>
+    <td>:</td><td><strong>${v.hari}, ${v.tgl}</strong></td>
   </tr>
   <tr>
     <td style="padding-left:40px;">Waktu</td>
-    <td>:</td><td>${waktu}</td>
+    <td>:</td><td>${v.waktu}</td>
   </tr>
   <tr>
     <td style="padding-left:40px;">Tempat</td>
-    <td>:</td><td>${ruang}</td>
+    <td>:</td><td>${v.ruang}</td>
   </tr>
   <tr>
     <td style="padding-left:40px;">Acara</td>
@@ -113,16 +128,96 @@ ${renderKopSurat(ctx.logo_src)}
 </table>
 
 <div class="signature-section">
-  <p class="signature-text" style="padding-left:25px;">Serang, ${tanggalSurat}</p>
+  <p class="signature-text" style="padding-left:25px;">Serang, ${v.tanggalSurat}</p>
   <p class="signature-text">a.n. Dekan</p>
   <p class="signature-text" style="padding-left:25px;">Wakil Dekan Bidang Akademik</p>
-  <div class="signature-space">${ttdHtml}</div>
-  <p class="signature-text" style="font-weight:bold;text-decoration:underline;padding-left:25px;">${wd1Nama}</p>
-  <p class="signature-text" style="padding-left:25px;">NIP. ${wd1Nip}</p>
+  <div class="signature-space">${v.ttdHtml}</div>
+  <p class="signature-text" style="font-weight:bold;text-decoration:underline;padding-left:25px;">${v.wd1Nama}</p>
+  <p class="signature-text" style="padding-left:25px;">NIP. ${v.wd1Nip}</p>
 </div>
 <div class="clear"></div>
-${renderFooter(qrHtml)}
+${renderFooter(v.qrHtml)}
 </div>
+
+<div class="page">
+${renderKopSurat(ctx.logo_src)}
+<div class="section-title">DAFTAR HADIR DEWAN PENGUJI</div>
+<div class="section-title">SEMINAR PROPOSAL SKRIPSI</div>
+
+<table class="tabel-info">
+  <tr><td style="padding-left:40px;">Hari / Tanggal</td><td>:</td><td>${v.hari}, ${v.tgl}</td></tr>
+  <tr><td style="padding-left:40px;">Nama Mahasiswa</td><td>:</td><td>${ctx.nama_mahasiswa}</td></tr>
+  <tr><td style="padding-left:40px;">NIM</td><td>:</td><td>${ctx.nim}</td></tr>
+  <tr><td style="padding-left:40px;">Prodi</td><td>:</td><td>${ctx.nama_prodi}</td></tr>
+</table>
+
+<table class="tabel-kehadiran">
+  <thead>
+    <tr>
+      <th>No</th><th>Nama</th><th>Jabatan</th><th>Tanda Tangan</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="checklist">1</td>
+      <td>${v.penguji1}</td>
+      <td>Penguji I</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td class="checklist">2</td>
+      <td>${v.penguji2}</td>
+      <td>Penguji II</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td class="checklist">3</td>
+      <td>${v.pembimbing1}</td>
+      <td>Pembimbing I</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td class="checklist">4</td>
+      <td>${v.pembimbing2}</td>
+      <td>Pembimbing II</td>
+      <td></td>
+    </tr>
+  </tbody>
+</table>
+
+<p style="text-align:right;margin-top:30px;font-size:12pt;">
+  Serang, ${v.tanggalSurat}<br>
+  Wakil Dekan Bidang Akademik
+</p>
+<div class="signature-section" style="margin-top:50px;">
+  <div class="signature-space">${v.ttdHtml}</div>
+  <p class="signature-text" style="font-weight:bold;text-decoration:underline;padding-left:25px;">${v.wd1Nama}</p>
+  <p class="signature-text" style="padding-left:25px;">NIP. ${v.wd1Nip}</p>
+</div>
+<div class="clear"></div>
+${renderFooter(v.qrHtml)}
+</div>
+
+</body>
+</html>`;
+}
+
+export function renderSeminarProposalBeritaAcara(ctx: DocumentContext): string {
+  const v = sharedVars(ctx);
+
+  const keputusanText = ctx.keputusan_sidang === "layak" ? "LAYAK"
+    : ctx.keputusan_sidang === "tidak_layak" ? "TIDAK LAYAK"
+    : placeholder(null, "KEPUTUSAN");
+
+  return `<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Berita Acara Seminar Proposal</title>
+<style>${commonStyles()}
+</style>
+</head>
+<body>
 
 <div class="page">
 ${renderKopSurat(ctx.logo_src)}
@@ -130,7 +225,7 @@ ${renderKopSurat(ctx.logo_src)}
 <div class="section-title">SEMINAR PROPOSAL SKRIPSI</div>
 
 <p class="paragraf">
-  Pada hari ${hari}, tanggal ${tgl}, telah dilaksanakan Seminar
+  Pada hari ${v.hari}, tanggal ${v.tgl}, telah dilaksanakan Seminar
   Proposal Skripsi mahasiswa:
 </p>
 
@@ -147,8 +242,8 @@ ${renderKopSurat(ctx.logo_src)}
 </p>
 
 <table class="tabel-info">
-  <tr><td style="padding-left:40px;">1.</td><td></td><td>${penguji1} (Penguji I)</td></tr>
-  <tr><td style="padding-left:40px;">2.</td><td></td><td>${penguji2} (Penguji II)</td></tr>
+  <tr><td style="padding-left:40px;">1.</td><td></td><td>${v.penguji1} (Penguji I)</td></tr>
+  <tr><td style="padding-left:40px;">2.</td><td></td><td>${v.penguji2} (Penguji II)</td></tr>
 </table>
 
 <p class="paragraf">
@@ -157,10 +252,8 @@ ${renderKopSurat(ctx.logo_src)}
 </p>
 
 <p class="paragraf">
-  <strong>Keputusan Seminar Proposal:</strong> <span style="font-size:13pt;font-weight:bold;">LAYAK / TIDAK LAYAK *</span>
+  <strong>Keputusan Seminar Proposal:</strong> <span style="font-size:13pt;font-weight:bold;">${keputusanText}</span>
 </p>
-
-<p style="font-size:10pt;margin-left:1cm;">* Coret yang tidak perlu</p>
 
 <p class="paragraf">
   Demikian berita acara ini dibuat dengan sebenar-benarnya.
@@ -169,78 +262,24 @@ ${renderKopSurat(ctx.logo_src)}
 <div class="signature-section" style="float:left;width:40%">
   <p class="signature-text" style="text-align:center;">Penguji I,</p>
   <div class="signature-space"></div>
-  <p class="signature-text" style="font-weight:bold;text-decoration:underline;text-align:center;">${penguji1}</p>
+  <p class="signature-text" style="font-weight:bold;text-decoration:underline;text-align:center;">${v.penguji1}</p>
   <p class="signature-text" style="text-align:center;">NIP.</p>
 </div>
 <div class="signature-section">
   <p class="signature-text" style="text-align:center;">Penguji II,</p>
   <div class="signature-space"></div>
-  <p class="signature-text" style="font-weight:bold;text-decoration:underline;text-align:center;">${penguji2}</p>
+  <p class="signature-text" style="font-weight:bold;text-decoration:underline;text-align:center;">${v.penguji2}</p>
   <p class="signature-text" style="text-align:center;">NIP.</p>
 </div>
 <div class="clear"></div>
-${renderFooter(qrHtml)}
-</div>
-
-<div class="page">
-${renderKopSurat(ctx.logo_src)}
-<div class="section-title">DAFTAR HADIR DEWAN PENGUJI</div>
-<div class="section-title">SEMINAR PROPOSAL SKRIPSI</div>
-
-<table class="tabel-info">
-  <tr><td style="padding-left:40px;">Hari / Tanggal</td><td>:</td><td>${hari}, ${tgl}</td></tr>
-  <tr><td style="padding-left:40px;">Nama Mahasiswa</td><td>:</td><td>${ctx.nama_mahasiswa}</td></tr>
-  <tr><td style="padding-left:40px;">NIM</td><td>:</td><td>${ctx.nim}</td></tr>
-  <tr><td style="padding-left:40px;">Prodi</td><td>:</td><td>${ctx.nama_prodi}</td></tr>
-</table>
-
-<table class="tabel-kehadiran">
-  <thead>
-    <tr>
-      <th>No</th><th>Nama</th><th>Jabatan</th><th>Tanda Tangan</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td class="checklist">1</td>
-      <td>${penguji1}</td>
-      <td>Penguji I</td>
-      <td></td>
-    </tr>
-    <tr>
-      <td class="checklist">2</td>
-      <td>${penguji2}</td>
-      <td>Penguji II</td>
-      <td></td>
-    </tr>
-    <tr>
-      <td class="checklist">3</td>
-      <td>${pembimbing1}</td>
-      <td>Pembimbing I</td>
-      <td></td>
-    </tr>
-    <tr>
-      <td class="checklist">4</td>
-      <td>${pembimbing2}</td>
-      <td>Pembimbing II</td>
-      <td></td>
-    </tr>
-  </tbody>
-</table>
-
-<p style="text-align:right;margin-top:30px;font-size:12pt;">
-  Serang, ${tanggalSurat}<br>
-  Wakil Dekan Bidang Akademik
-</p>
-<div class="signature-section" style="margin-top:50px;">
-  <div class="signature-space">${ttdHtml}</div>
-  <p class="signature-text" style="font-weight:bold;text-decoration:underline;padding-left:25px;">${wd1Nama}</p>
-  <p class="signature-text" style="padding-left:25px;">NIP. ${wd1Nip}</p>
-</div>
-<div class="clear"></div>
-${renderFooter(qrHtml)}
+${renderFooter(v.qrHtml)}
 </div>
 
 </body>
 </html>`;
+}
+
+// Keep original for backward compat
+export function renderSeminarProposal(ctx: DocumentContext): string {
+  return renderSeminarProposalSuratTugas(ctx);
 }

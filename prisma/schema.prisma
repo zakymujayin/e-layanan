@@ -24,6 +24,9 @@ model User {
   pegawai_id   Int? @unique
   mahasiswa_id Int? @unique
 
+  password_reset_token   String?   @unique @map("password_reset_token")
+  password_reset_expires DateTime? @map("password_reset_expires")
+
   dosen         Dosen?         @relation(fields: [dosen_id], references: [id])
   pegawai       Pegawai?       @relation(fields: [pegawai_id], references: [id])
   mahasiswa     Mahasiswa?     @relation(fields: [mahasiswa_id], references: [id])
@@ -42,6 +45,10 @@ enum SystemRole {
   staff_akademik
   kabag
   super_admin
+  wakil_dekan_1
+  dekan
+  kaprodi
+  sekprodi
 }
 
 model Dosen {
@@ -169,6 +176,7 @@ enum PositionCode {
   dekan
   kabag_tu
   kepala_lab
+  staff_prodi
 }
 
 model Assignment {
@@ -438,7 +446,7 @@ model PengajuanData {
 
 model PengajuanDokumen {
   id                     Int      @id @default(autoincrement())
-  pengajuan_id           Int
+  pengajuan_id           Int?
   dokumen_persyaratan_id Int?
   file_path              String
   file_name              String
@@ -449,7 +457,7 @@ model PengajuanDokumen {
   di_upload_oleh         Int
   di_upload_pada         DateTime @default(now())
 
-  pengajuan           PengajuanLayanan    @relation(fields: [pengajuan_id], references: [id])
+  pengajuan           PengajuanLayanan?   @relation(fields: [pengajuan_id], references: [id])
   dokumen_persyaratan DokumenPersyaratan? @relation(fields: [dokumen_persyaratan_id], references: [id])
 
   @@map("pengajuan_dokumen")
@@ -740,4 +748,16 @@ model Session {
   user User @relation(fields: [user_id], references: [id])
 
   @@map("sessions")
+}
+
+// ===================================================================
+// 16. APP CONFIG
+// ===================================================================
+
+model AppConfig {
+  key        String   @id @db.VarChar(100)
+  value      String   @db.Text
+  updated_at DateTime @default(now())
+
+  @@map("app_config")
 }

@@ -1,0 +1,104 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { toast } from "sonner";
+import { submitPengajuanAK } from "@/actions/pengajuan";
+import { DokumenUploadSection } from "@/components/upload/DokumenUploadSection";
+
+export default function AK07FormPage() {
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
+  const [uploadedIds, setUploadedIds] = useState<number[]>([]);
+  const [tipeRekomendasi, setTipeRekomendasi] = useState("");
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setIsLoading(true);
+    try {
+      const formData = new FormData(e.currentTarget);
+      await submitPengajuanAK("AK-07", formData);
+    } catch (err: any) {
+      toast.error(err.message || "Gagal submit pengajuan");
+      setIsLoading(false);
+    }
+  }
+
+  return (
+    <div className="mx-auto max-w-2xl space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold">Surat Rekomendasi</h1>
+        <p className="text-muted-foreground">AK-07 — Pengajuan surat rekomendasi untuk berbagai keperluan.</p>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <Card>
+          <CardHeader><CardTitle>Form Pengajuan</CardTitle></CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="tujuan_rekomendasi">Tujuan Rekomendasi</Label>
+              <Textarea
+                id="tujuan_rekomendasi"
+                name="tujuan_rekomendasi"
+                placeholder="Untuk apa rekomendasi ini"
+                rows={3}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="pihak_penerima">Pihak Penerima</Label>
+              <Input
+                id="pihak_penerima"
+                name="pihak_penerima"
+                placeholder="Instansi/kampus tujuan"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="tipe_rekomendasi">Tipe Rekomendasi</Label>
+              <Select value={tipeRekomendasi} onValueChange={(val) => val && setTipeRekomendasi(val)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Pilih tipe rekomendasi..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="beasiswa">Beasiswa</SelectItem>
+                  <SelectItem value="lanjut_studi">Lanjut Studi</SelectItem>
+                  <SelectItem value="kerja">Kerja</SelectItem>
+                  <SelectItem value="lainnya">Lainnya</SelectItem>
+                </SelectContent>
+              </Select>
+              <input type="hidden" name="tipe_rekomendasi" value={tipeRekomendasi} />
+            </div>
+          </CardContent>
+        </Card>
+
+        <DokumenUploadSection
+          layananKode="AK-07"
+          onFilesChange={setUploadedIds}
+        />
+        <input type="hidden" name="dokumen_ids" value={uploadedIds.join(",")} />
+
+        <div className="flex gap-4">
+          <Button type="button" variant="outline" onClick={() => router.back()}>Batal</Button>
+          <Button type="submit" disabled={isLoading} className="flex-1">
+            {isLoading ? "Mengirim..." : "Ajukan Surat Rekomendasi"}
+          </Button>
+        </div>
+      </form>
+    </div>
+  );
+}

@@ -9,9 +9,11 @@ export function getAccessibleScope(user: { id: number; systemRole: string }): Sc
   switch (user.systemRole) {
     case "super_admin": return { level: "all" };
     case "mahasiswa": return { level: "own", userId: user.id };
-    case "staff_prodi": return { level: "prodi", prodiId: 1 }; // TODO: get actual prodi_id from pegawai
-    case "staff_akademik": case "kabag": return { level: "fakultas", fakultasId: 1 };
-    case "dosen": return { level: "all" }; // dosen access depends on assignments, simplified for now
+    // staff_prodi scope is at fakultas level — no explicit prodi relation on Pegawai yet.
+    // Prodi-specific filtering is handled via structural_positions in dashboard/pengajuan queries.
+    case "staff_prodi": return { level: "fakultas" };
+    case "staff_akademik": case "kabag": return { level: "fakultas" };
+    case "dosen": return { level: "all" }; // dosen access depends on assignments
     default: throw new Error("Unknown system role");
   }
 }

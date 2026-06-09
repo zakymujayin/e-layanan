@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { setJadwalTA03 } from "@/actions/pengajuan";
 import { executeWorkflowAction } from "@/lib/workflow/execute-action";
 
-export function JadwalSidangInput({ pengajuanId }: { pengajuanId: number }) {
+export function JadwalSidangInput({ pengajuanId, actionLabel }: { pengajuanId: number; actionLabel?: string }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [tanggalSidang, setTanggalSidang] = useState("");
@@ -57,7 +57,7 @@ export function JadwalSidangInput({ pengajuanId }: { pengajuanId: number }) {
         </div>
       </div>
       <Button onClick={handleSubmit} disabled={loading}>
-        {loading ? "Menyimpan..." : "Verifikasi & Simpan Jadwal"}
+        {loading ? "Menyimpan..." : (actionLabel ?? "Verifikasi & Simpan Jadwal")}
       </Button>
     </div>
   );

@@ -15,6 +15,7 @@ async function main() {
   await prisma.verifikasiLog.deleteMany();
   await prisma.dokumenVerifikasi.deleteMany();
   await prisma.auditLog.deleteMany();
+  await prisma.appConfig.deleteMany();
   await prisma.ttdScan.deleteMany();
   await prisma.pengajuanLog.deleteMany();
   await prisma.pengajuanDokumen.deleteMany();
@@ -119,6 +120,7 @@ async function main() {
       { position_code: "dekan", dosen_id: dDekan.id, start_date: now, is_active: true },
       { position_code: "kepala_lab", dosen_id: dKalab.id, start_date: now, is_active: true },
       { position_code: "kabag_tu", pegawai_id: pKabag.id, start_date: now, is_active: true },
+      { position_code: "staff_prodi", pegawai_id: pStaffProdi.id, prodi_id: prodiIH.id, start_date: now, is_active: true },
     ],
   });
 
@@ -362,6 +364,179 @@ async function main() {
   await createAkWorkflow("AK-07", "pending_dekan");
 
   console.log("All 13 workflows seeded!");
+
+  // 12. field_layanan + dokumen_persyaratan for AK services
+  const akFieldDefs: Record<string, { nama_field: string; label: string; tipe_field: string; is_required: boolean; urutan: number; keterangan?: string }[]> = {
+    "AK-01": [
+      { nama_field: "peruntukan", label: "Peruntukan", tipe_field: "textarea", is_required: true, urutan: 1, keterangan: "Tujuan pembuatan surat (mis. Tunjangan Keluarga Orang Tua)" },
+    ],
+    "AK-02": [
+      { nama_field: "peruntukan", label: "Peruntukan", tipe_field: "textarea", is_required: true, urutan: 1, keterangan: "Tujuan surat" },
+      { nama_field: "orang_tua_pns", label: "Orang Tua PNS", tipe_field: "radio", is_required: true, urutan: 2, keterangan: "Apakah orang tua PNS?" },
+      { nama_field: "nama_orang_tua", label: "Nama Orang Tua", tipe_field: "text", is_required: false, urutan: 3, keterangan: "Diisi jika orang tua PNS" },
+      { nama_field: "nip_orang_tua", label: "NIP Orang Tua", tipe_field: "text", is_required: false, urutan: 4, keterangan: "18 digit jika orang tua PNS" },
+      { nama_field: "pangkat_golongan", label: "Pangkat/Golongan", tipe_field: "text", is_required: false, urutan: 5, keterangan: "Diisi jika orang tua PNS" },
+      { nama_field: "jabatan_orang_tua", label: "Jabatan Orang Tua", tipe_field: "text", is_required: false, urutan: 6, keterangan: "Diisi jika orang tua PNS" },
+      { nama_field: "instansi_orang_tua", label: "Instansi Orang Tua", tipe_field: "textarea", is_required: false, urutan: 7, keterangan: "Diisi jika orang tua PNS" },
+      { nama_field: "hubungan_orang_tua", label: "Hubungan dengan Orang Tua", tipe_field: "select", is_required: false, urutan: 8, keterangan: "ayah/ibu" },
+    ],
+    "AK-03": [
+      { nama_field: "peruntukan", label: "Peruntukan", tipe_field: "textarea", is_required: true, urutan: 1, keterangan: "Tujuan surat" },
+    ],
+    "AK-04": [
+      { nama_field: "mata_kuliah", label: "Mata Kuliah", tipe_field: "text", is_required: true, urutan: 1 },
+      { nama_field: "pejabat_tujuan", label: "Pejabat Tujuan", tipe_field: "text", is_required: true, urutan: 2 },
+      { nama_field: "instansi_tujuan", label: "Instansi Tujuan", tipe_field: "text", is_required: true, urutan: 3 },
+      { nama_field: "lokasi_observasi", label: "Lokasi Observasi", tipe_field: "text", is_required: true, urutan: 4, keterangan: "Pisahkan dengan koma untuk multiple lokasi" },
+      { nama_field: "tanggal_mulai", label: "Tanggal Mulai", tipe_field: "date", is_required: true, urutan: 5 },
+      { nama_field: "tanggal_selesai", label: "Tanggal Selesai", tipe_field: "date", is_required: true, urutan: 6 },
+      { nama_field: "dosen_pembimbing_observasi_id", label: "Dosen Pembimbing Observasi", tipe_field: "dosen_picker", is_required: true, urutan: 7 },
+    ],
+    "AK-05": [
+      { nama_field: "judul_penelitian", label: "Judul Penelitian", tipe_field: "text", is_required: true, urutan: 1, keterangan: "Auto-fill dari judul skripsi jika ada" },
+      { nama_field: "pejabat_tujuan", label: "Pejabat Tujuan", tipe_field: "textarea", is_required: true, urutan: 2, keterangan: "Bisa multiple, pisahkan dengan koma" },
+      { nama_field: "lokasi_penelitian", label: "Lokasi Penelitian", tipe_field: "textarea", is_required: true, urutan: 3, keterangan: "Bisa multiple, pisahkan dengan koma" },
+      { nama_field: "tanggal_mulai", label: "Tanggal Mulai", tipe_field: "date", is_required: true, urutan: 4 },
+      { nama_field: "tanggal_selesai", label: "Tanggal Selesai", tipe_field: "date", is_required: true, urutan: 5 },
+      { nama_field: "tujuan_penelitian", label: "Tujuan Penelitian", tipe_field: "textarea", is_required: true, urutan: 6 },
+    ],
+    "AK-06": [
+      { nama_field: "pejabat_tujuan", label: "Pejabat Tujuan", tipe_field: "text", is_required: true, urutan: 1 },
+      { nama_field: "instansi_tujuan", label: "Instansi Tujuan", tipe_field: "text", is_required: true, urutan: 2 },
+      { nama_field: "alamat_instansi", label: "Alamat Instansi", tipe_field: "textarea", is_required: true, urutan: 3 },
+      { nama_field: "tanggal_mulai", label: "Tanggal Mulai", tipe_field: "date", is_required: true, urutan: 4 },
+      { nama_field: "tanggal_selesai", label: "Tanggal Selesai", tipe_field: "date", is_required: true, urutan: 5 },
+      { nama_field: "bidang_magang", label: "Bidang Magang", tipe_field: "textarea", is_required: true, urutan: 6 },
+      { nama_field: "dosen_pembimbing_magang_id", label: "Dosen Pembimbing Magang", tipe_field: "dosen_picker", is_required: true, urutan: 7 },
+    ],
+    "AK-07": [
+      { nama_field: "tujuan_rekomendasi", label: "Tujuan Rekomendasi", tipe_field: "textarea", is_required: true, urutan: 1, keterangan: "Untuk apa rekomendasi ini" },
+      { nama_field: "pihak_penerima", label: "Pihak Penerima", tipe_field: "text", is_required: true, urutan: 2, keterangan: "Instansi/kampus tujuan" },
+      { nama_field: "tipe_rekomendasi", label: "Tipe Rekomendasi", tipe_field: "select", is_required: true, urutan: 3, keterangan: "beasiswa/lanjut_studi/kerja/lainnya" },
+    ],
+  };
+
+  const akDokumenDefs: Record<string, { nama_dokumen: string; format_diizinkan: string[]; ukuran_max_mb: number; is_required: boolean; urutan: number; keterangan?: string }[]> = {
+    "AK-01": [
+      { nama_dokumen: "Bukti Pembayaran UKT Semester Berjalan", format_diizinkan: ["PDF", "JPG"], ukuran_max_mb: 2, is_required: true, urutan: 1 },
+    ],
+    "AK-02": [
+      { nama_dokumen: "Bukti Pembayaran UKT", format_diizinkan: ["PDF", "JPG"], ukuran_max_mb: 2, is_required: true, urutan: 1 },
+      { nama_dokumen: "SK CPNS/PNS Orang Tua", format_diizinkan: ["PDF"], ukuran_max_mb: 2, is_required: true, urutan: 2, keterangan: "Wajib jika orang tua PNS" },
+      { nama_dokumen: "Kartu Keluarga (KK)", format_diizinkan: ["PDF", "JPG"], ukuran_max_mb: 2, is_required: true, urutan: 3, keterangan: "Wajib jika orang tua PNS" },
+    ],
+    "AK-03": [],
+    "AK-04": [
+      { nama_dokumen: "Tugas/Penugasan dari Dosen Pengampu", format_diizinkan: ["PDF"], ukuran_max_mb: 2, is_required: true, urutan: 1 },
+      { nama_dokumen: "Surat Persetujuan Dosen Pembimbing", format_diizinkan: ["PDF"], ukuran_max_mb: 2, is_required: true, urutan: 2 },
+    ],
+    "AK-05": [
+      { nama_dokumen: "Proposal Penelitian/Skripsi", format_diizinkan: ["PDF"], ukuran_max_mb: 10, is_required: true, urutan: 1 },
+    ],
+    "AK-06": [
+      { nama_dokumen: "Proposal Magang", format_diizinkan: ["PDF"], ukuran_max_mb: 2, is_required: true, urutan: 1 },
+      { nama_dokumen: "CV Mahasiswa", format_diizinkan: ["PDF"], ukuran_max_mb: 2, is_required: true, urutan: 2 },
+      { nama_dokumen: "Transkrip Nilai Sementara", format_diizinkan: ["PDF"], ukuran_max_mb: 2, is_required: true, urutan: 3 },
+      { nama_dokumen: "Surat Persetujuan Dosen Pembimbing", format_diizinkan: ["PDF"], ukuran_max_mb: 2, is_required: true, urutan: 4 },
+    ],
+    "AK-07": [
+      { nama_dokumen: "Surat Permohonan dari Mahasiswa", format_diizinkan: ["PDF"], ukuran_max_mb: 2, is_required: true, urutan: 1 },
+      { nama_dokumen: "Transkrip Nilai", format_diizinkan: ["PDF"], ukuran_max_mb: 2, is_required: true, urutan: 2, keterangan: "Wajib untuk beasiswa/lanjut studi" },
+      { nama_dokumen: "Dokumen Pendukung Lainnya", format_diizinkan: ["PDF"], ukuran_max_mb: 2, is_required: false, urutan: 3 },
+    ],
+  };
+
+  for (const [kode, fields] of Object.entries(akFieldDefs)) {
+    for (const f of fields) {
+      await prisma.fieldLayanan.create({
+        data: {
+          jenis_layanan_id: layananMap[kode],
+          nama_field: f.nama_field,
+          label: f.label,
+          tipe_field: f.tipe_field as any,
+          is_required: f.is_required,
+          urutan: f.urutan,
+          keterangan: f.keterangan,
+        },
+      });
+    }
+  }
+
+  for (const [kode, doks] of Object.entries(akDokumenDefs)) {
+    for (const d of doks) {
+      await prisma.dokumenPersyaratan.create({
+        data: {
+          jenis_layanan_id: layananMap[kode],
+          nama_dokumen: d.nama_dokumen,
+          format_diizinkan: d.format_diizinkan,
+          ukuran_max_mb: d.ukuran_max_mb,
+          is_required: d.is_required,
+          urutan: d.urutan,
+          keterangan: d.keterangan,
+        },
+      });
+    }
+  }
+
+  // field_layanan + dokumen_persyaratan for TA-04, TA-05, TA-06
+  const ta04Fields = [
+    { nama_field: "judul_skripsi", label: "Judul Skripsi", tipe_field: "text", is_required: true, urutan: 1, keterangan: "Auto-fill dari judul_skripsi" },
+  ];
+  const ta04Dokumen = [
+    { nama_dokumen: "Transkrip Nilai Terbaru", format_diizinkan: ["PDF"], ukuran_max_mb: 2, is_required: true, urutan: 1 },
+    { nama_dokumen: "Sertifikat Lulus Seminar Proposal (TA-03)", format_diizinkan: ["PDF"], ukuran_max_mb: 2, is_required: true, urutan: 2, keterangan: "Auto-attach dari TA-03" },
+    { nama_dokumen: "Bukti Pembayaran Ujian Komprehensif", format_diizinkan: ["PDF", "JPG"], ukuran_max_mb: 2, is_required: true, urutan: 3 },
+    { nama_dokumen: "KRS Semester Berjalan", format_diizinkan: ["PDF"], ukuran_max_mb: 2, is_required: true, urutan: 4 },
+  ];
+  for (const f of ta04Fields) await prisma.fieldLayanan.create({ data: { jenis_layanan_id: layananMap["TA-04"], ...f, tipe_field: f.tipe_field as any } });
+  for (const d of ta04Dokumen) await prisma.dokumenPersyaratan.create({ data: { jenis_layanan_id: layananMap["TA-04"], ...d } });
+
+  const ta05Fields = [
+    { nama_field: "judul_skripsi", label: "Judul Skripsi", tipe_field: "text", is_required: true, urutan: 1, keterangan: "Auto-fill dari judul_skripsi" },
+    { nama_field: "pembimbing_1", label: "Pembimbing 1", tipe_field: "text", is_required: true, urutan: 2, keterangan: "Auto-fill dari TA-02" },
+    { nama_field: "pembimbing_2", label: "Pembimbing 2", tipe_field: "text", is_required: true, urutan: 3, keterangan: "Auto-fill dari TA-02" },
+  ];
+  const ta05Dokumen = [
+    { nama_dokumen: "Skripsi Lengkap (Final Draft)", format_diizinkan: ["PDF"], ukuran_max_mb: 15, is_required: true, urutan: 1 },
+    { nama_dokumen: "Lembar Persetujuan Pembimbing untuk Diujikan", format_diizinkan: ["PDF"], ukuran_max_mb: 2, is_required: true, urutan: 2 },
+    { nama_dokumen: "Sertifikat Lulus Komprehensif (TA-04)", format_diizinkan: ["PDF"], ukuran_max_mb: 2, is_required: true, urutan: 3, keterangan: "Auto-attach dari TA-04" },
+    { nama_dokumen: "Sertifikat Turnitin (TA-06)", format_diizinkan: ["PDF"], ukuran_max_mb: 2, is_required: true, urutan: 4, keterangan: "Auto-attach dari TA-06" },
+    { nama_dokumen: "Transkrip Nilai Lengkap", format_diizinkan: ["PDF"], ukuran_max_mb: 2, is_required: true, urutan: 5 },
+    { nama_dokumen: "KRS Semester Berjalan", format_diizinkan: ["PDF"], ukuran_max_mb: 2, is_required: true, urutan: 6 },
+    { nama_dokumen: "Bukti Pembayaran Ujian Skripsi", format_diizinkan: ["PDF", "JPG"], ukuran_max_mb: 2, is_required: true, urutan: 7 },
+  ];
+  for (const f of ta05Fields) await prisma.fieldLayanan.create({ data: { jenis_layanan_id: layananMap["TA-05"], ...f, tipe_field: f.tipe_field as any } });
+  for (const d of ta05Dokumen) await prisma.dokumenPersyaratan.create({ data: { jenis_layanan_id: layananMap["TA-05"], ...d } });
+
+  const ta06Fields = [
+    { nama_field: "judul_skripsi", label: "Judul Skripsi", tipe_field: "text", is_required: true, urutan: 1, keterangan: "Auto-fill dari judul_skripsi" },
+    { nama_field: "submission_id_turnitin", label: "Submission ID Turnitin", tipe_field: "text", is_required: true, urutan: 2 },
+    { nama_field: "url_turnitin", label: "URL Turnitin", tipe_field: "text", is_required: true, urutan: 3 },
+    { nama_field: "similarity_percentage", label: "Similarity Percentage (%)", tipe_field: "number", is_required: true, urutan: 4 },
+  ];
+  const ta06Dokumen = [
+    { nama_dokumen: "Draft Skripsi yang Disubmit ke Turnitin", format_diizinkan: ["PDF"], ukuran_max_mb: 15, is_required: true, urutan: 1 },
+    { nama_dokumen: "Screenshot Hasil Turnitin", format_diizinkan: ["PDF", "JPG", "PNG"], ukuran_max_mb: 2, is_required: true, urutan: 2 },
+  ];
+  for (const f of ta06Fields) await prisma.fieldLayanan.create({ data: { jenis_layanan_id: layananMap["TA-06"], ...f, tipe_field: f.tipe_field as any } });
+  for (const d of ta06Dokumen) await prisma.dokumenPersyaratan.create({ data: { jenis_layanan_id: layananMap["TA-06"], ...d } });
+
+  console.log("Field + Dokumen definitions seeded!");
+
+  // 13. App Config defaults
+  await prisma.appConfig.createMany({
+    data: [
+      { key: "app_name", value: "SILA - Sistem Informasi Layanan Akademik" },
+      { key: "logo_url", value: "/images/logo-uin.png" },
+      { key: "footer_text", value: "Fakultas Ushuluddin dan Adab UIN Sultan Maulana Hasanuddin Banten" },
+      { key: "turnitin_threshold", value: "25" },
+      { key: "smtp_host", value: "" },
+      { key: "smtp_port", value: "587" },
+      { key: "smtp_user", value: "" },
+      { key: "smtp_pass", value: "" },
+    ],
+  });
+  console.log("App config defaults seeded!");
 }
 
 main()
