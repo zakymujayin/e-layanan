@@ -5,6 +5,10 @@ import { decrypt } from "@/lib/crypto";
 
 const BASE_URL = process.env.NEXTAUTH_URL ?? "http://localhost:3003";
 
+function esc(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
 type CachedSmtp = { transporter: Transporter; from: string } | null;
 let smtpCache: CachedSmtp | undefined = undefined;
 
@@ -39,13 +43,14 @@ export function buildEmailHtml(opts: {
   entityType?: string | null;
   entityId?: number | null;
 }): string {
+  const entityId = Number(opts.entityId) || null;
   const linkHtml =
-    opts.entityType === "pengajuan" && opts.entityId
-      ? `<p style="margin-top:16px"><a href="${BASE_URL}/pengajuan/${opts.entityId}" style="background:#1d4ed8;color:#fff;padding:8px 18px;border-radius:6px;text-decoration:none;font-size:14px">Lihat Pengajuan →</a></p>`
+    opts.entityType === "pengajuan" && entityId
+      ? `<p style="margin-top:16px"><a href="${BASE_URL}/pengajuan/${entityId}" style="background:#1d4ed8;color:#fff;padding:8px 18px;border-radius:6px;text-decoration:none;font-size:14px">Lihat Pengajuan →</a></p>`
       : "";
   return `<!DOCTYPE html><html><body style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#1f2937">
-<h2 style="margin:0 0 8px;font-size:18px">${opts.title}</h2>
-<p style="margin:0 0 12px;font-size:14px;color:#374151">${opts.message}</p>
+<h2 style="margin:0 0 8px;font-size:18px">${esc(opts.title)}</h2>
+<p style="margin:0 0 12px;font-size:14px;color:#374151">${esc(opts.message)}</p>
 ${linkHtml}
 <hr style="margin:24px 0;border:none;border-top:1px solid #e5e7eb"/>
 <p style="font-size:12px;color:#9ca3af">SILA — Sistem Layanan Akademik</p>
