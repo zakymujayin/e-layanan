@@ -1,0 +1,4 @@
+email,password,system_role,nama_lengkap,identifier,prodi_kode,angkatan
+aini@student.uinbanten.ac.id,password123,mahasiswa,Aini Nurul,20210101001,TI,2021
+budi@dosen.uinbanten.ac.id,password123,dosen,Dr. Budi Santoso,0012345678,,
+staff@uinbanten.ac.id,password123,staff_prodi,Ahmad Fauzi,198501012010011001,,

@@ -359,3 +359,132 @@ export async function resetUserPassword(userId: number, formData: FormData) {
   await prisma.user.update({ where: { id: userId }, data: { password_hash: hash } });
   revalidatePath("/admin/users");
 }
+
+// ============================================================
+// BULK IMPORT USERS
+// ============================================================
+
+export async function importUsersFromCsv(formData: FormData): Promise<{
+  success: number;
+  failed: Array<{ row: number; email: string; error: string }>;
+}> {
+  await requireAdmin();
+
+  const file = formData.get("file") as File | null;
+  if (!file) throw new Error("File tidak ditemukan");
+
+  const text = await file.text();
+  const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
+  // skip header row
+  const dataLines = lines.slice(1);
+
+  let success = 0;
+  const failed: Array<{ row: number; email: string; error: string }> = [];
+
+  const isDosen = (role: string) =>
+    ["dosen", "kaprodi", "sekprodi", "wakil_dekan_1", "dekan"].includes(role);
+  const isPegawai = (role: string) =>
+    ["staff_prodi", "staff_akademik", "kabag", "super_admin"].includes(role);
+
+  for (let i = 0; i < dataLines.length; i++) {
+    const rowNum = i + 2; // +2 because row 1 is header
+    const cols = dataLines[i].split(",").map((c) => c.trim());
+    const [email, password, system_role, nama_lengkap, identifier, prodi_kode, angkatan_str] = cols;
+
+    if (!email || !password || !system_role || !nama_lengkap || !identifier) {
+      failed.push({ row: rowNum, email: email ?? "", error: "Kolom wajib tidak lengkap (email, password, system_role, nama_lengkap, identifier)" });
+      continue;
+    }
+
+    try {
+      const existing = await prisma.user.findUnique({ where: { email } });
+      if (existing) {
+        failed.push({ row: rowNum, email, error: "Email sudah terdaftar" });
+        continue;
+      }
+
+      const passwordHash = await bcrypt.hash(password, 12);
+
+      if (system_role === "mahasiswa") {
+        if (!prodi_kode) {
+          failed.push({ row: rowNum, email, error: "prodi_kode wajib untuk mahasiswa" });
+          continue;
+        }
+        const prodi = await prisma.prodi.findFirst({ where: { kode: prodi_kode } });
+        if (!prodi) {
+          failed.push({ row: rowNum, email, error: `Prodi dengan kode '${prodi_kode}' tidak ditemukan` });
+          continue;
+        }
+        const angkatan = angkatan_str ? parseInt(angkatan_str, 10) : new Date().getFullYear();
+        if (isNaN(angkatan)) {
+          failed.push({ row: rowNum, email, error: "angkatan harus berupa angka tahun" });
+          continue;
+        }
+
+        const mhs = await prisma.mahasiswa.create({
+          data: {
+            nim: identifier,
+            nama_lengkap,
+            prodi_id: prodi.id,
+            angkatan,
+            semester_aktif: 1,
+            status_mahasiswa: "aktif",
+          },
+        });
+        await prisma.user.create({
+          data: {
+            email,
+            password_hash: passwordHash,
+            system_role: "mahasiswa",
+            mahasiswa_id: mhs.id,
+            is_active: true,
+          },
+        });
+      } else if (isDosen(system_role)) {
+        const dosen = await prisma.dosen.create({
+          data: {
+            nidn: identifier,
+            nama_lengkap,
+            is_active: true,
+          },
+        });
+        await prisma.user.create({
+          data: {
+            email,
+            password_hash: passwordHash,
+            system_role: system_role as any,
+            dosen_id: dosen.id,
+            is_active: true,
+          },
+        });
+      } else if (isPegawai(system_role)) {
+        const pegawai = await prisma.pegawai.create({
+          data: {
+            nip: identifier,
+            nama_lengkap,
+            is_active: true,
+          },
+        });
+        await prisma.user.create({
+          data: {
+            email,
+            password_hash: passwordHash,
+            system_role: system_role as any,
+            pegawai_id: pegawai.id,
+            is_active: true,
+          },
+        });
+      } else {
+        failed.push({ row: rowNum, email, error: `system_role '${system_role}' tidak dikenal` });
+        continue;
+      }
+
+      success++;
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Error tidak diketahui";
+      failed.push({ row: rowNum, email, error: msg });
+    }
+  }
+
+  return { success, failed };
+}
