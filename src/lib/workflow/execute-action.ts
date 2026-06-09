@@ -174,6 +174,30 @@ export async function executeWorkflowAction(input: {
     return updated;
   });
 
+  // Buat SlaSchedule untuk step berikutnya jika ada sla_days
+  if (nextStepCode && targetStatus && !["selesai", "terminated", "revision_required"].includes(targetStatus)) {
+    const nextStepSla = await prisma.workflowStep.findFirst({
+      where: { step_code: nextStepCode },
+      select: { sla_days: true, sla_consequence: true },
+    });
+    if (nextStepSla?.sla_days) {
+      // Hapus schedule lama yang belum triggered untuk pengajuan + step ini
+      await prisma.slaSchedule.deleteMany({
+        where: { pengajuan_id: pengajuan.id, step_code: nextStepCode, is_triggered: false },
+      });
+      const deadline = new Date(Date.now() + nextStepSla.sla_days * 24 * 60 * 60 * 1000);
+      await prisma.slaSchedule.create({
+        data: {
+          pengajuan_id: pengajuan.id,
+          step_code: nextStepCode,
+          deadline,
+          consequence: nextStepSla.sla_consequence ?? "reminder",
+          is_triggered: false,
+        },
+      });
+    }
+  }
+
   // Fire notifications after transaction (fire-and-forget)
   const layananNama = pengajuan.jenis_layanan.nama;
   const mhsNama = pengajuan.mahasiswa.nama_lengkap;
