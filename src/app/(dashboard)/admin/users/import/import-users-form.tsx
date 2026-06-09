@@ -90,11 +90,16 @@ export function ImportUsersForm() {
           <CardHeader>
             <CardTitle>Hasil Import</CardTitle>
             <CardDescription>
-              <span className="text-green-700 font-medium">{result.success} berhasil</span>
-              {" · "}
-              <span className="text-red-700 font-medium">{result.failed.length} gagal</span>
+              {result.success} berhasil · {result.failed.length} gagal
             </CardDescription>
           </CardHeader>
+          {result.success > 0 && (
+            <CardContent className="pb-0">
+              <div className="rounded bg-green-50 border border-green-200 px-4 py-2 text-sm text-green-700">
+                {result.success} pengguna berhasil diimpor.
+              </div>
+            </CardContent>
+          )}
           {result.failed.length > 0 && (
             <CardContent>
               <div className="overflow-x-auto">
@@ -117,13 +122,6 @@ export function ImportUsersForm() {
                   </tbody>
                 </table>
               </div>
-            </CardContent>
-          )}
-          {result.success > 0 && result.failed.length === 0 && (
-            <CardContent>
-              <p className="text-sm text-green-700">
-                Semua baris berhasil diimport.
-              </p>
             </CardContent>
           )}
         </Card>
