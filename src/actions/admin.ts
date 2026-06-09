@@ -6,6 +6,7 @@ import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { encrypt } from "@/lib/crypto";
 import { cookies } from "next/headers";
+import { type SystemRole } from "@/generated/prisma/client";
 
 async function requireAdmin() {
   const session = await auth();
@@ -468,7 +469,7 @@ export async function importUsersFromCsv(formData: FormData): Promise<{
           data: {
             email,
             password_hash: passwordHash,
-            system_role: system_role as any,
+            system_role: system_role as SystemRole,
             dosen_id: dosen.id,
             is_active: true,
           },
@@ -485,7 +486,7 @@ export async function importUsersFromCsv(formData: FormData): Promise<{
           data: {
             email,
             password_hash: passwordHash,
-            system_role: system_role as any,
+            system_role: system_role as SystemRole,
             pegawai_id: pegawai.id,
             is_active: true,
           },

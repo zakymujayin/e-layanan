@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { createNotification } from "@/lib/notification";
 import { createPengajuanLog } from "@/lib/workflow/audit";
-import { Prisma } from "@/generated/prisma/client";
+import { type Prisma, type SystemRole, type PositionCode, type StatusPengajuan } from "@/generated/prisma/client";
 
 type OverdueSchedule = Prisma.SlaScheduleGetPayload<{
   include: {
@@ -98,7 +98,7 @@ async function handleBypass(schedule: OverdueSchedule): Promise<void> {
     await tx.pengajuanLayanan.update({
       where: { id: pengajuan.id },
       data: {
-        status: toStatus as any,
+        status: toStatus as StatusPengajuan,
         current_step_code: nextStep.step_code,
         updated_at: new Date(),
       },
@@ -127,7 +127,7 @@ async function handleBypass(schedule: OverdueSchedule): Promise<void> {
 async function resolveActorUsers(actorType: string, pengajuanId: number): Promise<number[]> {
   if (["staff_prodi", "staff_akademik", "kabag"].includes(actorType)) {
     const users = await prisma.user.findMany({
-      where: { system_role: actorType as any, is_active: true },
+      where: { system_role: actorType as SystemRole, is_active: true },
       select: { id: true },
     });
     return users.map((u) => u.id);
@@ -150,7 +150,7 @@ async function resolveActorUsers(actorType: string, pengajuanId: number): Promis
 
   // kaprodi, sekprodi, wakil_dekan_1, dekan, kepala_lab
   const positions = await prisma.structuralPosition.findMany({
-    where: { position_code: actorType as any, is_active: true },
+    where: { position_code: actorType as PositionCode, is_active: true },
     include: {
       dosen: {
         include: {
