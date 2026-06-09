@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth";
 import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { encrypt } from "@/lib/crypto";
+import { cookies } from "next/headers";
 
 async function requireAdmin() {
   const session = await auth();
@@ -358,6 +359,25 @@ export async function resetUserPassword(userId: number, formData: FormData) {
   const hash = await bcrypt.hash(newPassword, 12);
   await prisma.user.update({ where: { id: userId }, data: { password_hash: hash } });
   revalidatePath("/admin/users");
+}
+
+// ============================================================
+// BULK IMPORT USERS
+// ============================================================
+
+// ============================================================
+// SEMESTER SELECTOR
+// ============================================================
+
+export async function setActiveSemester(semesterId: number): Promise<void> {
+  const cookieStore = await cookies();
+  cookieStore.set("selected_semester_id", String(semesterId), {
+    path: "/",
+    maxAge: 60 * 60 * 24 * 365,
+    httpOnly: true,
+    sameSite: "lax",
+  });
+  revalidatePath("/", "layout");
 }
 
 // ============================================================

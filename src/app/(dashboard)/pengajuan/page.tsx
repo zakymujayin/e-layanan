@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { cookies } from "next/headers";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -21,6 +22,10 @@ export default async function PengajuanListPage({ searchParams }: PageProps) {
 
   const userId = Number(session.user.id);
   const filters = await searchParams;
+
+  const cookieStore = await cookies();
+  const cookieSemesterId = cookieStore.get("selected_semester_id")?.value;
+  const semesterIdParam = filters.period ?? cookieSemesterId ?? null;
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -85,7 +90,7 @@ export default async function PengajuanListPage({ searchParams }: PageProps) {
   const filterWhere: any = {};
   if (filters.status) filterWhere.status = filters.status;
   if (filters.kode) filterWhere.jenis_layanan = { kode: filters.kode };
-  if (filters.period) filterWhere.academic_period_id = Number(filters.period);
+  if (semesterIdParam) filterWhere.academic_period_id = Number(semesterIdParam);
   if (filters.q) {
     filterWhere.OR = [
       { kode_pengajuan: { contains: filters.q, mode: "insensitive" } },

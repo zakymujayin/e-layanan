@@ -6,6 +6,7 @@ import { Users, FileText, CheckCircle, Clock } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
+import { cookies } from "next/headers";
 
 function StatCard({ label, value, icon: Icon, sub }: { label: string; value: number; icon: React.ComponentType<{ className?: string }>; sub?: string }) {
   return (
@@ -23,6 +24,12 @@ function StatCard({ label, value, icon: Icon, sub }: { label: string; value: num
 }
 
 export default async function AdminMonitoringPage() {
+  const cookieStore = await cookies();
+  const cookieSemesterId = cookieStore.get("selected_semester_id")?.value;
+  const semesterFilter = cookieSemesterId
+    ? { academic_period_id: Number(cookieSemesterId) }
+    : {};
+
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
@@ -41,13 +48,14 @@ export default async function AdminMonitoringPage() {
   ] = await Promise.all([
     prisma.user.count(),
     prisma.user.count({ where: { is_active: true } }),
-    prisma.pengajuanLayanan.count(),
-    prisma.pengajuanLayanan.count({ where: { status: "selesai", completed_at: { gte: startOfMonth } } }),
-    prisma.pengajuanLayanan.count({ where: { status: "selesai", completed_at: { gte: startOfLastMonth, lte: endOfLastMonth } } }),
-    prisma.pengajuanLayanan.count({ where: { status: { notIn: ["selesai", "terminated"] } } }),
+    prisma.pengajuanLayanan.count({ where: { ...semesterFilter } }),
+    prisma.pengajuanLayanan.count({ where: { ...semesterFilter, status: "selesai", completed_at: { gte: startOfMonth } } }),
+    prisma.pengajuanLayanan.count({ where: { ...semesterFilter, status: "selesai", completed_at: { gte: startOfLastMonth, lte: endOfLastMonth } } }),
+    prisma.pengajuanLayanan.count({ where: { ...semesterFilter, status: { notIn: ["selesai", "terminated"] } } }),
     // Stuck: aktif lebih dari 14 hari
     prisma.pengajuanLayanan.findMany({
       where: {
+        ...semesterFilter,
         status: { notIn: ["selesai", "terminated"] },
         updated_at: { lte: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000) },
       },
@@ -69,7 +77,7 @@ export default async function AdminMonitoringPage() {
     }),
     // Aktivitas terbaru
     prisma.pengajuanLayanan.findMany({
-      where: { status: "selesai" },
+      where: { ...semesterFilter, status: "selesai" },
       include: { jenis_layanan: true, mahasiswa: true },
       orderBy: { completed_at: "desc" },
       take: 10,
