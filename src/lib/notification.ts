@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import { sendEmail, buildEmailHtml } from "@/lib/email";
 
 interface CreateNotificationInput {
   user_id: number;
@@ -22,6 +23,24 @@ export async function createNotification(input: CreateNotificationInput) {
       entity_id: input.entity_id ?? null,
     },
   });
+
+  // Fire-and-forget email — tidak boleh crash workflow
+  prisma.user
+    .findUnique({ where: { id: input.user_id }, select: { email: true } })
+    .then((user) => {
+      if (!user?.email) return;
+      return sendEmail(
+        user.email,
+        input.title,
+        buildEmailHtml({
+          title: input.title,
+          message: input.message,
+          entityType: input.entity_type,
+          entityId: input.entity_id,
+        })
+      );
+    })
+    .catch(() => {});
 }
 
 export async function markNotificationRead(notificationId: number) {
