@@ -42,7 +42,7 @@ export function renderUjianSkripsiSuratTugas(ctx: DocumentContext): string {
 <title>Surat Tugas Ujian Skripsi</title>
 <style>
   ${PAGE_CSS}${HEADER_CSS}${FOOTER_CSS}
-  .page-first .page { font-family: Arial, Helvetica, sans-serif; font-size: 10pt; }
+  .page-first .page { font-family: "Times New Roman", Times, serif; font-size: 10pt; }
 
   .center { text-align: center; }
   .justify { text-align: justify; }

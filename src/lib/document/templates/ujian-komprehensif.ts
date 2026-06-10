@@ -78,11 +78,11 @@ body {
   position: relative;
   page-break-after: always;
   display: block;
-  font-family: 'Bookman Old Style', "Times New Roman", Times, serif;
+  font-family: "Times New Roman", Times, serif;
 }
 
 .page:first-of-type {
-  font-family: Arial, Helvetica, sans-serif !important;
+  font-family: "Times New Roman", Times, serif;
   font-size: 10pt !important;
 }
 

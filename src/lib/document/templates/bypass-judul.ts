@@ -27,7 +27,9 @@ export function renderBypassJudul(ctx: DocumentContext): string {
 <head>
 <meta charset="UTF-8">
 <title>Formulir Bypass Seleksi Judul</title>
-<style>${PAGE_CSS}${HEADER_CSS}
+<style>
+  body { font-family: "Times New Roman", Times, serif; font-size: 12pt; }
+  ${PAGE_CSS}${HEADER_CSS}
   .judul-surat { text-align:center; font-size:12pt; font-weight:bold; margin:10px 0; }
   .judul-surat.underline { text-decoration:underline; }
   .paragraf { text-align:justify; margin:15px 0; font-size:12pt; line-height:1.5; text-indent:1cm; }

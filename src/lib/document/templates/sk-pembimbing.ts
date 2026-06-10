@@ -42,7 +42,7 @@ export function renderSkPembimbing(ctx: DocumentContext): string {
 ${fontFace}
 @page { size: A4; margin: 5mm 15mm 15mm 20mm; }
 body {
-  font-family: 'Bookman Old Style', 'Bookman', 'URW Bookman L', 'Georgia', serif;
+  font-family: "Times New Roman", Times, serif;
   font-size: 10pt; line-height: 1.2; color: #000; margin: 0; padding: 0;
 }
 @media screen {
