@@ -11,6 +11,11 @@ const MOCK_DATA: Record<string, Omit<NimValidationResult, "valid">> = {
     prodi: "Ilmu Al-Quran dan Tafsir",
     angkatan: 2022,
   },
+  "221360099": {
+    nama: "Test Register E2E",
+    prodi: "Ilmu Hadis",
+    angkatan: 2022,
+  },
 };
 
 export class LocalNimValidator implements NimValidator {

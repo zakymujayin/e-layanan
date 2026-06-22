@@ -12,8 +12,14 @@ export const proxy = auth((req) => {
   if (publicRoutes.includes(pathname) || publicPrefixes.some((p) => pathname.startsWith(p))) {
     return NextResponse.next();
   }
+  // Server actions (POST with Next-Action header) handle auth internally — let them through
+  if (req.method === "POST" && req.headers.get("next-action")) {
+    return NextResponse.next();
+  }
   if (!req.auth) {
-    const loginUrl = new URL("/login", req.url);
+    // Use Host header to get actual port — req.url may be normalized by NextAuth to NEXTAUTH_URL
+    const host = req.headers.get("host") ?? req.nextUrl.host;
+    const loginUrl = new URL("/login", `${req.nextUrl.protocol}//${host}`);
     return NextResponse.redirect(loginUrl);
   }
   return NextResponse.next();

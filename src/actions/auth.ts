@@ -54,6 +54,13 @@ export async function registerMahasiswa(data: {
 
   const passwordHash = await bcrypt.hash(data.password, 12);
 
+  // Look up prodi by name from validator; fall back to first prodi if not found
+  const prodi = await prisma.prodi.findFirst({
+    where: { nama: { contains: validation.prodi, mode: "insensitive" } },
+    select: { id: true },
+  });
+  const prodiId = prodi?.id ?? (await prisma.prodi.findFirst({ select: { id: true }, orderBy: { id: "asc" } }))?.id ?? 1;
+
   const result = await prisma.$transaction(async (tx) => {
     const mahasiswa = await tx.mahasiswa.upsert({
       where: { nim: data.nim },
@@ -61,7 +68,7 @@ export async function registerMahasiswa(data: {
       create: {
         nim: data.nim,
         nama_lengkap: validation.nama,
-        prodi_id: 1,
+        prodi_id: prodiId,
         angkatan: validation.angkatan,
         status_mahasiswa: "aktif",
       },
