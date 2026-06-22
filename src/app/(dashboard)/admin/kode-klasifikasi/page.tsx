@@ -23,7 +23,7 @@ export default async function AdminKodeKlasifikasiPage() {
       <div className="space-y-2">
         {kodeList.map(kode => (
           <details key={kode.id} className="border rounded-lg">
-            <summary className="flex items-center justify-between gap-4 px-4 py-3 cursor-pointer list-none hover:bg-muted/50 transition-colors">
+            <summary className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-4 py-3 cursor-pointer list-none hover:bg-muted/50 transition-colors">
               <div className="min-w-0 flex-1 flex items-center gap-3">
                 <Badge variant="outline" className="text-xs font-mono shrink-0">{kode.kode}</Badge>
                 <div>

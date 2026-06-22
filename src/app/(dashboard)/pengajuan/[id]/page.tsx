@@ -116,9 +116,9 @@ export default async function PengajuanDetailPage({
         <Link href="/pengajuan"><Button variant="outline" size="sm">Kembali</Button></Link>
       </div>
 
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">{pengajuan.jenis_layanan.nama}</h1>
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-bold truncate">{pengajuan.jenis_layanan.nama}</h1>
           <p className="text-muted-foreground">
             {pengajuan.kode_pengajuan} · Diajukan {new Date(pengajuan.created_at).toLocaleDateString("id-ID")}
           </p>
@@ -133,7 +133,7 @@ export default async function PengajuanDetailPage({
 
       {versions.length > 1 && (
         <div className="flex items-center gap-2 text-sm flex-wrap">
-          <span className="text-xs text-muted-foreground">Versi:</span>
+          <span className="text-xs text-muted-foreground shrink-0">Versi:</span>
           {versions.map(v => (
             <Link
               key={v.versi_ke}
@@ -177,26 +177,26 @@ export default async function PengajuanDetailPage({
           </div>
         )}
         {fieldValues && (
-          <div className="space-y-1 text-sm">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-1 gap-x-4 text-sm">
             {isAk && akFields.map(([k, v]) => (
-              <p key={k} className="text-muted-foreground">{k.replace(/_/g, " ")}: {String(v ?? "")}</p>
+              <p key={k} className="text-muted-foreground truncate">{k.replace(/_/g, " ")}: {String(v ?? "")}</p>
             ))}
             {!isAk && taFields.map(([k, v]) => (
-              <p key={k} className="text-muted-foreground">{k.replace(/_/g, " ")}: {String(v ?? "")}</p>
+              <p key={k} className="text-muted-foreground truncate">{k.replace(/_/g, " ")}: {String(v ?? "")}</p>
             ))}
             {!isAk && fieldValues && Object.entries(fieldValues)
               .filter(([k]) => k.startsWith("judul_") && fieldValues[k] && k !== "judul_skripsi")
               .map(([k, v]) => (
-                <p key={k} className="text-muted-foreground">{k.replace(/_/g, " ")}: {String(v)}</p>
+                <p key={k} className="text-muted-foreground truncate">{k.replace(/_/g, " ")}: {String(v)}</p>
               ))}
             {String(fieldValues.judul_skripsi ?? "") && (
-              <p className="text-muted-foreground">Judul Skripsi: {String(fieldValues.judul_skripsi)}</p>
+              <p className="text-muted-foreground truncate">Judul Skripsi: {String(fieldValues.judul_skripsi)}</p>
             )}
             {String(fieldValues.pa_dosen_id ?? "") && (
               <p className="text-xs text-muted-foreground">PA Dosen ID: {String(fieldValues.pa_dosen_id)}</p>
             )}
             {isAk && !akFields.length && !fieldValues.judul_skripsi && fieldValues.pa_dosen_id === undefined && (
-              <p className="text-xs text-muted-foreground italic">Belum ada data input</p>
+              <p className="text-xs text-muted-foreground italic col-span-full">Belum ada data input</p>
             )}
           </div>
         )}
@@ -212,13 +212,13 @@ export default async function PengajuanDetailPage({
           <h3 className="mb-3 font-semibold">Dokumen ({pengajuan.pengajuan_dokumen.length})</h3>
           <div className="space-y-2">
             {pengajuan.pengajuan_dokumen.map((dok) => (
-              <div key={dok.id} className="flex items-center justify-between rounded-md border p-3">
-                <div className="flex items-center gap-2 text-sm">
-                  <span className="font-medium">{dok.dokumen_persyaratan?.nama_dokumen ?? dok.file_name}</span>
+              <div key={dok.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between rounded-md border p-3 gap-2">
+                <div className="flex flex-wrap items-center gap-2 text-sm min-w-0">
+                  <span className="font-medium truncate">{dok.dokumen_persyaratan?.nama_dokumen ?? dok.file_name}</span>
                   {dok.is_auto_attached && (
-                    <span className="text-xs px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">Auto</span>
+                    <span className="text-xs px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 shrink-0">Auto</span>
                   )}
-                  <span className="text-muted-foreground text-xs">
+                  <span className="text-muted-foreground text-xs shrink-0">
                     (v{dok.versi} · {dok.file_name} · {(dok.file_size_bytes / 1024).toFixed(0)} KB)
                   </span>
                 </div>
@@ -226,7 +226,7 @@ export default async function PengajuanDetailPage({
                   href={`/api/files/${dok.file_path}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-sm text-primary hover:underline"
+                  className="text-sm text-primary hover:underline shrink-0"
                 >
                   Lihat
                 </a>

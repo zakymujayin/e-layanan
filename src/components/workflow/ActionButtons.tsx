@@ -4,6 +4,16 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { executeWorkflowAction } from "@/lib/workflow/execute-action";
 import type { WorkflowStepAction } from "@/generated/prisma/client";
@@ -34,6 +44,7 @@ export function ActionButtons({ pengajuanId, actions, isPA, judulCount }: Action
   const [selectedJudul, setSelectedJudul] = useState<number | null>(null);
   const [alasan, setAlasan] = useState("");
   const [targetStatus, setTargetStatus] = useState<string>("");
+  const [confirmAction, setConfirmAction] = useState<string | null>(null);
 
   async function execute(action: string) {
     setLoading(action);
@@ -53,6 +64,17 @@ export function ActionButtons({ pengajuanId, actions, isPA, judulCount }: Action
       toast.error(err.message || "Gagal mengeksekusi aksi");
     } finally {
       setLoading(null);
+    }
+  }
+
+  function handleActionClick(actionCode: string) {
+    setConfirmAction(actionCode);
+  }
+
+  function confirmAndExecute() {
+    if (confirmAction) {
+      execute(confirmAction);
+      setConfirmAction(null);
     }
   }
 
@@ -120,7 +142,7 @@ export function ActionButtons({ pengajuanId, actions, isPA, judulCount }: Action
                     (needsReason && !alasan.trim()) ||
                     (needsTarget && !targetStatus)
                   }
-                  onClick={() => execute(a.action_code)}
+                  onClick={() => isDestructive ? handleActionClick(a.action_code) : execute(a.action_code)}
                 >
                   {loading === a.action_code ? "Memproses..." : a.label}
                 </Button>
@@ -129,6 +151,21 @@ export function ActionButtons({ pengajuanId, actions, isPA, judulCount }: Action
           );
         })}
       </div>
+
+      <AlertDialog open={confirmAction !== null} onOpenChange={() => setConfirmAction(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Konfirmasi Aksi</AlertDialogTitle>
+            <AlertDialogDescription>
+              Apakah Anda yakin ingin melakukan aksi ini? Tindakan ini tidak dapat dibatalkan.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmAndExecute}>Ya, Lanjutkan</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -59,7 +59,7 @@ export function ImportUsersForm() {
           <form
             ref={formRef}
             onSubmit={handleSubmit}
-            className="flex items-end gap-4"
+            className="flex flex-col sm:flex-row items-stretch sm:items-end gap-4"
           >
             <input
               type="file"

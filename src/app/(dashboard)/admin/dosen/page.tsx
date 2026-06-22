@@ -10,7 +10,7 @@ function DosenRow({ dosen }: { dosen: any }) {
 
   return (
     <details className="group border rounded-lg">
-      <summary className="flex items-center justify-between gap-4 px-4 py-3 cursor-pointer list-none hover:bg-muted/50 transition-colors">
+      <summary className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-4 py-3 cursor-pointer list-none hover:bg-muted/50 transition-colors">
         <div className="min-w-0 flex-1">
           <p className="text-sm font-medium truncate">{namaLengkap || dosen.nama_lengkap}</p>
           <p className="text-xs text-muted-foreground">{dosen.nidn} · {dosen.jabatan_fungsional || "—"}</p>
@@ -18,7 +18,7 @@ function DosenRow({ dosen }: { dosen: any }) {
             <p className="text-xs text-muted-foreground">{dosen.user.email}</p>
           )}
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 shrink-0 flex-wrap">
           {dosen.is_active ? (
             <Badge className="bg-green-100 text-green-800 text-xs">Aktif</Badge>
           ) : (
@@ -29,7 +29,7 @@ function DosenRow({ dosen }: { dosen: any }) {
 
       <div className="border-t px-4 py-4 bg-muted/20">
         <div className="grid gap-4 md:grid-cols-2">
-          <form action={updateDosen.bind(null, dosen.id)} className="space-y-3">
+          <form action={updateDosen.bind(null, dosen.id)} className="space-y-3 min-w-0">
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <label className="text-xs font-medium text-muted-foreground">Gelar Depan</label>

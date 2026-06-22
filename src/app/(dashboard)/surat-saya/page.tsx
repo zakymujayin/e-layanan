@@ -95,7 +95,7 @@ export default async function SuratSayaPage() {
       </div>
 
       <Tabs defaultValue="pa">
-        <TabsList className="flex-wrap h-auto gap-1">
+        <TabsList className="flex-wrap h-auto gap-1 overflow-x-auto">
           {ASSIGNMENT_GROUPS.map(group => (
             <TabsTrigger key={group.key} value={group.key} className="text-xs">
               {group.label}
@@ -123,7 +123,7 @@ export default async function SuratSayaPage() {
                   return (
                     <Card key={assignment.id}>
                       <CardHeader className="py-3">
-                        <div className="flex items-start justify-between gap-4">
+                        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-2">
                               <Badge variant="outline" className="text-xs shrink-0">

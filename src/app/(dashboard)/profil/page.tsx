@@ -33,7 +33,7 @@ export default async function ProfilPage() {
   const showTtdSection = !!user.dosen || !!user.pegawai;
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-lg mx-auto space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Profil Saya</h1>
         {identifier && <p className="text-muted-foreground">{identifier}</p>}

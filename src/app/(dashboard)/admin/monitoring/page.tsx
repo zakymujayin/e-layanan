@@ -96,7 +96,7 @@ export default async function AdminMonitoringPage() {
       </div>
 
       {/* Global Stats */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Total User Aktif" value={activeUsers} icon={Users} sub={`dari ${totalUsers} total user`} />
         <StatCard label="Pengajuan Aktif" value={activeCount} icon={Clock} sub="Belum selesai/terminated" />
         <StatCard
@@ -108,7 +108,7 @@ export default async function AdminMonitoringPage() {
         <StatCard label="Total Pengajuan" value={totalPengajuan} icon={FileText} sub="Sepanjang masa" />
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
         {/* Pengajuan per Layanan */}
         <Card>
           <CardHeader>
@@ -168,8 +168,8 @@ export default async function AdminMonitoringPage() {
           {stuckPengajuan.length === 0 ? (
             <p className="text-sm text-muted-foreground py-4 text-center">Tidak ada pengajuan yang stuck.</p>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+            <div className="overflow-x-auto -mx-4 sm:mx-0">
+              <table className="w-full text-sm min-w-[600px]">
                 <thead>
                   <tr className="border-b text-muted-foreground text-xs">
                     <th className="text-left py-2 pr-4">Kode</th>

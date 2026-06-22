@@ -27,7 +27,7 @@ export default function TA01FormPage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
+    <div className="mx-auto max-w-2xl w-full space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Pengajuan Judul Skripsi</h1>
         <p className="text-muted-foreground">TA-01 — Ajukan minimal 3 judul. PA akan memilih 1 dari judul yang Anda ajukan.</p>
@@ -78,9 +78,9 @@ export default function TA01FormPage() {
           </CardContent>
         </Card>
 
-        <div className="flex gap-4">
-          <Button type="button" variant="outline" onClick={() => router.back()}>Batal</Button>
-          <Button type="submit" disabled={isLoading} className="flex-1">
+        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
+          <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={() => router.back()}>Batal</Button>
+          <Button type="submit" disabled={isLoading} className="w-full sm:w-auto">
             {isLoading ? "Mengirim..." : "Submit Pengajuan"}
           </Button>
         </div>

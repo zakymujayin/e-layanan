@@ -123,7 +123,7 @@ export default async function PengajuanListPage({ searchParams }: PageProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold">Pengajuan</h1>
           <p className="text-muted-foreground">
@@ -139,18 +139,18 @@ export default async function PengajuanListPage({ searchParams }: PageProps) {
       </div>
 
       {/* Filter Bar */}
-      <form method="GET" className="flex flex-wrap gap-3">
+      <form method="GET" className="flex flex-col sm:flex-row flex-wrap gap-3">
         <input
           type="text"
           name="q"
           placeholder="Cari nama / kode pengajuan..."
           defaultValue={filters.q ?? ""}
-          className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring min-w-[200px]"
+          className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring w-full sm:w-auto min-w-[160px] sm:min-w-0"
         />
         <select
           name="status"
           defaultValue={filters.status ?? ""}
-          className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+          className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring w-full sm:w-auto min-w-[160px]"
         >
           <option value="">Semua Status</option>
           {STATUS_OPTIONS.map(s => (
@@ -160,7 +160,7 @@ export default async function PengajuanListPage({ searchParams }: PageProps) {
         <select
           name="kode"
           defaultValue={filters.kode ?? ""}
-          className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+          className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring w-full sm:w-auto min-w-[160px]"
         >
           <option value="">Semua Layanan</option>
           {layananList.map(l => (
@@ -168,11 +168,11 @@ export default async function PengajuanListPage({ searchParams }: PageProps) {
           ))}
         </select>
         {periodList.length > 0 && (
-          <select
-            name="period"
-            defaultValue={filters.period ?? ""}
-            className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
-          >
+            <select
+              name="period"
+              defaultValue={filters.period ?? ""}
+              className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring w-full sm:w-auto min-w-[160px]"
+            >
             <option value="">Semua Semester</option>
             {periodList.map(p => (
               <option key={p.id} value={String(p.id)}>{p.nama_semester} {p.tahun_akademik}</option>

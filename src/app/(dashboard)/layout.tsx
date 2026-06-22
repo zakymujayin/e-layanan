@@ -61,24 +61,24 @@ export default async function DashboardLayout({
     <SidebarProvider>
       <IdleLogout />
       <AppSidebar systemRole={user.system_role} />
-      <main className="flex flex-1 flex-col">
+      <main className="flex flex-1 flex-col min-h-screen w-full min-w-0">
         <Header
           userName={userName}
           slot={
-            semesterOptions.length > 0 ? (
-              <SemesterSelector
-                semesters={semesterOptions}
-                selectedId={selectedSemesterId}
-              />
-            ) : undefined
+            <SemesterSelector
+              semesters={semesterOptions}
+              selectedId={selectedSemesterId}
+            />
           }
         />
         {isArchiveMode && (
-          <div className="bg-amber-50 border-b border-amber-200 px-6 py-2 text-sm text-amber-800">
-            ⚠ Mode Arsip — {semesterOptions.find((s) => s.id === selectedSemesterId)?.label}. Data read-only.
+          <div className="bg-amber-50 border-b border-amber-200 px-4 sm:px-6 py-2 text-sm text-amber-800">
+            ⚠ Mode Arsip &mdash; {semesterOptions.find((s) => s.id === selectedSemesterId)?.label}. Data bersifat read-only.
           </div>
         )}
-        <div className="flex-1 p-6">{children}</div>
+        <div className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          {children}
+        </div>
       </main>
     </SidebarProvider>
   );

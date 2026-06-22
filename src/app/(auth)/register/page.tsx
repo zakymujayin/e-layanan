@@ -60,7 +60,7 @@ export default function RegisterPage() {
 
   if (step === "form" && nimData) {
     return (
-      <Card>
+      <Card className="w-full">
         <CardHeader>
           <CardTitle>Lengkapi Data</CardTitle>
           <CardDescription>
@@ -93,7 +93,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <Card>
+    <Card className="w-full">
       <CardHeader>
         <CardTitle>Daftar Akun</CardTitle>
         <CardDescription>

@@ -64,7 +64,7 @@ export default async function AdminPenomoranPage() {
       <div className="space-y-4">
         {Array.from(groups.entries()).map(([key, group]) => (
           <details key={key} className="border rounded-lg">
-            <summary className="flex items-center justify-between gap-4 px-4 py-3 cursor-pointer list-none hover:bg-muted/50 transition-colors">
+            <summary className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-4 py-3 cursor-pointer list-none hover:bg-muted/50 transition-colors">
               <div>
                 <p className="text-sm font-medium">{group.kodeKlasifikasi}</p>
                 <p className="text-xs text-muted-foreground">{group.periodNama}</p>
@@ -79,8 +79,8 @@ export default async function AdminPenomoranPage() {
                 )}
               </div>
             </summary>
-            <div className="border-t overflow-x-auto">
-              <table className="w-full text-xs">
+            <div className="border-t overflow-x-auto -mx-4 sm:mx-0">
+              <table className="w-full text-xs min-w-[600px]">
                 <thead>
                   <tr className="border-b bg-muted/30 text-muted-foreground">
                     <th className="text-left px-4 py-2">Nomor</th>

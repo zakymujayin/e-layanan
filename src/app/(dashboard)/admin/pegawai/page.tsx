@@ -6,7 +6,7 @@ import { format } from "date-fns";
 function PegawaiRow({ pegawai }: { pegawai: any }) {
   return (
     <details className="group border rounded-lg">
-      <summary className="flex items-center justify-between gap-4 px-4 py-3 cursor-pointer list-none hover:bg-muted/50 transition-colors">
+      <summary className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-4 py-3 cursor-pointer list-none hover:bg-muted/50 transition-colors">
         <div className="min-w-0 flex-1">
           <p className="text-sm font-medium">{pegawai.nama_lengkap}</p>
           <p className="text-xs text-muted-foreground">
@@ -22,7 +22,7 @@ function PegawaiRow({ pegawai }: { pegawai: any }) {
 
       <div className="border-t px-4 py-4 bg-muted/20">
         <div className="grid gap-4 md:grid-cols-2">
-          <form action={updatePegawai.bind(null, pegawai.id)} className="space-y-3">
+          <form action={updatePegawai.bind(null, pegawai.id)} className="space-y-3 min-w-0">
             <div>
               <label className="text-xs font-medium text-muted-foreground">Nama Lengkap</label>
               <input name="nama_lengkap" defaultValue={pegawai.nama_lengkap} required className="mt-1 w-full rounded-md border border-input bg-background px-2.5 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-ring" />

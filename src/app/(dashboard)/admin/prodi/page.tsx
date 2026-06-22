@@ -20,7 +20,7 @@ export default async function AdminProdiPage() {
       <div className="space-y-2">
         {prodiList.map(prodi => (
           <details key={prodi.id} className="border rounded-lg">
-            <summary className="flex items-center justify-between gap-4 px-4 py-3 cursor-pointer list-none hover:bg-muted/50 transition-colors">
+            <summary className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-4 py-3 cursor-pointer list-none hover:bg-muted/50 transition-colors">
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   <Badge variant="outline" className="text-xs font-mono">{prodi.kode}</Badge>
@@ -34,8 +34,8 @@ export default async function AdminProdiPage() {
                 {prodi.is_active ? "Aktif" : "Nonaktif"}
               </Badge>
             </summary>
-            <div className="border-t px-4 py-4 bg-muted/20 flex items-end gap-4">
-              <form action={updateProdi.bind(null, prodi.id)} className="flex items-end gap-2 flex-1">
+            <div className="border-t px-4 py-4 bg-muted/20 flex flex-col sm:flex-row items-end gap-4">
+              <form action={updateProdi.bind(null, prodi.id)} className="flex flex-col sm:flex-row items-end gap-2 flex-1 min-w-0">
                 <div className="flex-1">
                   <label className="text-xs font-medium text-muted-foreground">Nama Prodi</label>
                   <input name="nama" defaultValue={prodi.nama} required className="mt-1 w-full rounded-md border border-input bg-background px-2.5 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-ring" />

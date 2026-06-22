@@ -38,21 +38,22 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-2">
             <CardTitle>Daftar User</CardTitle>
             <span className="text-sm text-muted-foreground">{total} user</span>
           </div>
-          <form method="GET" className="flex gap-2 mt-2">
+          <form method="GET" className="flex flex-col sm:flex-row gap-2 mt-2">
             <input
               type="text"
               name="q"
               defaultValue={q}
               placeholder="Cari nama, email, NIM..."
-              className="flex-1 h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+              className="flex-1 h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring min-w-0"
             />
+            <div className="flex gap-2 shrink-0">
             <button
               type="submit"
-              className="h-9 rounded-md border border-input bg-background px-4 text-sm hover:bg-muted"
+              className="h-9 rounded-md border border-input bg-background px-4 text-sm hover:bg-muted shrink-0"
             >
               Cari
             </button>
@@ -61,6 +62,7 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
                 Reset
               </a>
             )}
+            </div>
           </form>
         </CardHeader>
         <CardContent>

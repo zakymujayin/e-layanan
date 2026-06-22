@@ -26,7 +26,7 @@ export default function TA04FormPage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
+    <div className="mx-auto max-w-2xl w-full space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Ujian Komprehensif (TA-04)</h1>
         <p className="text-muted-foreground">
@@ -54,9 +54,9 @@ export default function TA04FormPage() {
         />
         <input type="hidden" name="dokumen_ids" value={uploadedIds.join(",")} />
 
-        <div className="flex gap-4">
-          <Button type="button" variant="outline" onClick={() => router.back()}>Batal</Button>
-          <Button type="submit" disabled={isLoading} className="flex-1">
+        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
+          <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={() => router.back()}>Batal</Button>
+          <Button type="submit" disabled={isLoading} className="w-full sm:w-auto">
             {isLoading ? "Mengirim..." : "Ajukan Ujian Komprehensif"}
           </Button>
         </div>

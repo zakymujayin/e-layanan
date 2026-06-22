@@ -55,7 +55,7 @@ export default async function AdminPositionsPage() {
           return (
             <Card key={code}>
               <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
                   <div>
                     <CardTitle className="text-base">{label}</CardTitle>
                     {current ? (
@@ -71,7 +71,7 @@ export default async function AdminPositionsPage() {
                       <p className="mt-1 text-sm text-muted-foreground italic">Belum ada pemegang jabatan</p>
                     )}
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap shrink-0">
                     {current ? (
                       <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
                         Aktif

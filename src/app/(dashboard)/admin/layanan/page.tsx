@@ -20,8 +20,8 @@ export default async function AdminLayananPage() {
         <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">{title}</h2>
         <div className="space-y-2">
           {items.map(l => (
-            <div key={l.id} className="flex items-center justify-between gap-4 border rounded-lg px-4 py-3">
-              <div className="min-w-0 flex-1 flex items-start gap-3">
+            <div key={l.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border rounded-lg px-4 py-3">
+              <div className="min-w-0 flex items-start gap-3">
                 <Badge variant="outline" className="text-xs font-mono shrink-0 mt-0.5">{l.kode}</Badge>
                 <div>
                   <p className="text-sm font-medium">{l.nama}</p>
@@ -30,7 +30,7 @@ export default async function AdminLayananPage() {
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
                 {l.is_active ? (
                   <Badge className="bg-green-100 text-green-800 text-xs">Aktif</Badge>
                 ) : (

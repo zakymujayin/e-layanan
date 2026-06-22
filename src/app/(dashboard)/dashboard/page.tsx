@@ -309,7 +309,7 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
         <StatCard label={stat1.label} value={stat1.value} icon={FileText} />
         <StatCard label={stat2.label} value={stat2.value} icon={Clock} />
         <StatCard label={stat3.label} value={stat3.value} icon={CheckCircle} />

@@ -72,7 +72,8 @@ export function UsersTable({ users }: { users: any[] }) {
   const [editingId, setEditingId] = useState<number | null>(null);
 
   return (
-    <div className="space-y-1">
+    <div className="space-y-1 overflow-x-auto -mx-4 sm:mx-0">
+      <div className="inline-block min-w-full align-middle">
       <Table>
         <TableHeader>
           <TableRow>
@@ -106,6 +107,7 @@ export function UsersTable({ users }: { users: any[] }) {
           ))}
         </TableBody>
       </Table>
+      </div>
       {editingId !== null && (
         <EditUserForm
           user={users.find(u => u.id === editingId)!}

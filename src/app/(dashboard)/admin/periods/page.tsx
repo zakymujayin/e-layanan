@@ -98,7 +98,7 @@ export default async function AdminPeriodsPage() {
         {periods.map((period) => (
           <Card key={period.id}>
             <CardHeader>
-              <div className="flex items-start justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                 <div>
                   <CardTitle>{period.nama_semester}</CardTitle>
                   <p className="mt-1 text-sm text-muted-foreground">
@@ -107,7 +107,7 @@ export default async function AdminPeriodsPage() {
                     {period.tanggal_berakhir ? ` – ${period.tanggal_berakhir.toLocaleDateString("id-ID")}` : ""}
                   </p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap shrink-0">
                   <PeriodBadge status={period.status} />
                   {period.status !== "active" && (
                     <>

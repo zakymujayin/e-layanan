@@ -26,7 +26,7 @@ export default function TA05FormPage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
+    <div className="mx-auto max-w-2xl w-full space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Ujian Skripsi Munaqasyah (TA-05)</h1>
         <p className="text-muted-foreground">Prasyarat: TA-04 Komprehensif harus LULUS dan TA-06 Turnitin harus selesai</p>
@@ -52,9 +52,9 @@ export default function TA05FormPage() {
         />
         <input type="hidden" name="dokumen_ids" value={uploadedIds.join(",")} />
 
-        <div className="flex gap-4">
-          <Button type="button" variant="outline" onClick={() => router.back()}>Batal</Button>
-          <Button type="submit" disabled={isLoading} className="flex-1">
+        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
+          <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={() => router.back()}>Batal</Button>
+          <Button type="submit" disabled={isLoading} className="w-full sm:w-auto">
             {isLoading ? "Mengirim..." : "Ajukan Ujian Skripsi"}
           </Button>
         </div>

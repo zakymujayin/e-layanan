@@ -26,7 +26,7 @@ export default function AK03FormPage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
+    <div className="mx-auto max-w-2xl w-full space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Surat Keterangan Pernah Kuliah</h1>
         <p className="text-muted-foreground">AK-03 — Pengajuan surat keterangan pernah kuliah untuk alumni atau mahasiswa D.O.</p>
@@ -52,9 +52,9 @@ export default function AK03FormPage() {
           </CardContent>
         </Card>
 
-        <div className="flex gap-4">
-          <Button type="button" variant="outline" onClick={() => router.back()}>Batal</Button>
-          <Button type="submit" disabled={isLoading} className="flex-1">
+        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
+          <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={() => router.back()}>Batal</Button>
+          <Button type="submit" disabled={isLoading} className="w-full sm:w-auto">
             {isLoading ? "Mengirim..." : "Ajukan Surat Keterangan Pernah Kuliah"}
           </Button>
         </div>
