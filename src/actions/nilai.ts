@@ -6,6 +6,7 @@ import { auth } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { createNotification } from "@/lib/notification";
 import { generateAndStoreDokumen } from "@/lib/document/generate-and-store";
+import { calculateYudisium } from "@/lib/document/yudisium";
 
 const NilaiSemproSchema = z.object({
   nilai: z.number().min(0).max(100, "Nilai harus 0-100"),
@@ -199,13 +200,6 @@ export async function inputNilaiKomprehensif(
 // ============================================================
 // TA-05: Munaqasyah — Sekretaris input semua nilai + yudisium
 // ============================================================
-
-function calculateYudisium(nilaiFinal: number): string {
-  if (nilaiFinal >= 3.51) return "pujian";
-  if (nilaiFinal >= 3.01) return "sangat_memuaskan";
-  if (nilaiFinal >= 2.76) return "memuaskan";
-  return "";
-}
 
 function convertToIpk(nilai: number): number {
   if (nilai >= 85) return 4.00;
