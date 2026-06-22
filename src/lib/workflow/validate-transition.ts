@@ -16,7 +16,7 @@ export async function validateTransition(
 
   const validAction = step.actions.find((a) => a.action_code === action);
   if (!validAction) {
-    throw new Error(`ERR_BUS_INVALID_STATE_TRANSITION: Action '${action}' tidak valid`);
+    throw new Error(`ERR_BUS_INVALID_ACTION: Action '${action}' tidak valid`);
   }
 
   return { step, actionDef: validAction, targetStatus: validAction.target_status };
