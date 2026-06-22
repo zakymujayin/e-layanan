@@ -26,7 +26,7 @@ export async function approveAs(page: Page, user: { identifier: string; password
 
   const texts = btnText
     ? [btnText]
-    : ["Setujui", "Approve", "Terima", "Tandatangani", "Proses", "Lanjutkan", "Sign"];
+    : ["Setujui", "Approve", "Terima", "Tandatangani", "Tanda Tangan", "Terbitkan", "Proses", "Lanjutkan", "Sign", "Verifikasi"];
 
   for (const text of texts) {
     const btn = page.locator(`button:has-text("${text}")`).first();
