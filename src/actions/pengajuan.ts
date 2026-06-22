@@ -18,6 +18,33 @@ const TA01Schema = z.object({
   pa_dosen_id: z.coerce.number().int().positive("Pilih Pembimbing Akademik"),
 });
 
+const TA02Schema = z.object({
+  dokumen_ids: z.string().optional(),
+});
+
+const TA03Schema = z.object({
+  dokumen_ids: z.string().optional(),
+});
+
+const TA04Schema = z.object({
+  dokumen_ids: z.string().optional(),
+});
+
+const TA05Schema = z.object({
+  dokumen_ids: z.string().optional(),
+});
+
+const TA06Schema = z.object({
+  submission_id_turnitin: z.string().min(3, "Submission ID wajib diisi"),
+  url_turnitin: z.string().url("URL Turnitin tidak valid"),
+  similarity_percentage: z.coerce.number().min(0).max(100, "Similarity harus 0-100"),
+  dokumen_ids: z.string().optional(),
+});
+
+const AKGenericSchema = z.object({
+  dokumen_ids: z.string().optional(),
+});
+
 async function requireRole(userId: number, allowedRoles: string[]): Promise<void> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -196,6 +223,11 @@ export async function submitPengajuanTA02(formData: FormData) {
   });
   if (!firstStep) throw new Error("Workflow step tidak ditemukan");
 
+  const parsed = TA02Schema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) {
+    throw new Error(`ERR_VAL_INVALID_FORMAT: ${parsed.error.issues[0].message}`);
+  }
+
   const judulSkripsi = await prisma.judulSkripsi.findFirst({
     where: { mahasiswa_id: mhs.id, status: "aktif" },
   });
@@ -247,7 +279,7 @@ export async function submitPengajuanTA02(formData: FormData) {
     });
   });
 
-  const dokumenIdsTA02 = (formData.get("dokumen_ids") as string)?.split(",").filter(Boolean).map(Number) ?? [];
+  const dokumenIdsTA02 = parsed.data.dokumen_ids?.split(",").filter(Boolean).map(Number) ?? [];
   if (dokumenIdsTA02.length > 0) await linkDokumenToPengajuan(dokumenIdsTA02, pengajuan.id, userId);
 
   await reserveNomorSurat(pengajuan.id).catch(() => {});
@@ -293,6 +325,11 @@ export async function submitPengajuanTA03(formData: FormData) {
     orderBy: { step_order: "asc" },
   });
   if (!firstStep) throw new Error("Workflow step tidak ditemukan");
+
+  const parsed = TA03Schema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) {
+    throw new Error(`ERR_VAL_INVALID_FORMAT: ${parsed.error.issues[0].message}`);
+  }
 
   const judulSkripsi = await prisma.judulSkripsi.findFirst({
     where: { mahasiswa_id: mhs.id, status: "aktif" },
@@ -356,7 +393,7 @@ export async function submitPengajuanTA03(formData: FormData) {
     });
   });
 
-  const dokumenIdsTA03 = (formData.get("dokumen_ids") as string)?.split(",").filter(Boolean).map(Number) ?? [];
+  const dokumenIdsTA03 = parsed.data.dokumen_ids?.split(",").filter(Boolean).map(Number) ?? [];
   if (dokumenIdsTA03.length > 0) await linkDokumenToPengajuan(dokumenIdsTA03, pengajuan.id, userId);
 
   await reserveNomorSurat(pengajuan.id).catch(() => {});
@@ -417,6 +454,11 @@ export async function submitPengajuanAK(kode: string, formData: FormData) {
 
   if (!eligibility.allowedStatuses.includes(mhs.status_mahasiswa)) {
     throw new Error(`ERR_BUS_PREREQUISITE_NOT_MET: ${eligibility.errorMessage}`);
+  }
+
+  const parsed = AKGenericSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) {
+    throw new Error(`ERR_VAL_INVALID_FORMAT: ${parsed.error.issues[0].message}`);
   }
 
   const existing = await prisma.pengajuanLayanan.findFirst({
@@ -508,7 +550,7 @@ export async function submitPengajuanAK(kode: string, formData: FormData) {
     });
   });
 
-  const dokumenIdsAK = (formData.get("dokumen_ids") as string)?.split(",").filter(Boolean).map(Number) ?? [];
+  const dokumenIdsAK = parsed.data.dokumen_ids?.split(",").filter(Boolean).map(Number) ?? [];
   if (dokumenIdsAK.length > 0) await linkDokumenToPengajuan(dokumenIdsAK, pengajuan.id, userId);
 
   await reserveNomorSurat(pengajuan.id).catch(() => {});
@@ -567,6 +609,11 @@ export async function submitPengajuanTA04(formData: FormData) {
   });
   if (!firstStep) throw new Error("Workflow step tidak ditemukan");
 
+  const parsed = TA04Schema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) {
+    throw new Error(`ERR_VAL_INVALID_FORMAT: ${parsed.error.issues[0].message}`);
+  }
+
   const judulSkripsi = await prisma.judulSkripsi.findFirst({
     where: { mahasiswa_id: mhs.id, status: "aktif" },
   });
@@ -597,7 +644,7 @@ export async function submitPengajuanTA04(formData: FormData) {
     });
   });
 
-  const dokumenIdsTA04 = (formData.get("dokumen_ids") as string)?.split(",").filter(Boolean).map(Number) ?? [];
+  const dokumenIdsTA04 = parsed.data.dokumen_ids?.split(",").filter(Boolean).map(Number) ?? [];
   if (dokumenIdsTA04.length > 0) await linkDokumenToPengajuan(dokumenIdsTA04, pengajuan.id, userId);
 
   await reserveNomorSurat(pengajuan.id).catch(() => {});
@@ -661,6 +708,11 @@ export async function submitPengajuanTA05(formData: FormData) {
   });
   if (!firstStep) throw new Error("Workflow step tidak ditemukan");
 
+  const parsed = TA05Schema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) {
+    throw new Error(`ERR_VAL_INVALID_FORMAT: ${parsed.error.issues[0].message}`);
+  }
+
   const judulSkripsi = await prisma.judulSkripsi.findFirst({
     where: { mahasiswa_id: mhs.id, status: "aktif" },
   });
@@ -691,7 +743,7 @@ export async function submitPengajuanTA05(formData: FormData) {
     });
   });
 
-  const dokumenIdsTA05 = (formData.get("dokumen_ids") as string)?.split(",").filter(Boolean).map(Number) ?? [];
+  const dokumenIdsTA05 = parsed.data.dokumen_ids?.split(",").filter(Boolean).map(Number) ?? [];
   if (dokumenIdsTA05.length > 0) await linkDokumenToPengajuan(dokumenIdsTA05, pengajuan.id, userId);
 
   await reserveNomorSurat(pengajuan.id).catch(() => {});
@@ -741,14 +793,17 @@ export async function submitPengajuanTA06(formData: FormData) {
   });
   if (!firstStep) throw new Error("Workflow step tidak ditemukan");
 
-  const submissionId = (formData.get("submission_id_turnitin") as string) || "";
-  const urlTurnitin = (formData.get("url_turnitin") as string) || "";
-  const similarityStr = (formData.get("similarity_percentage") as string) || "0";
-  const similarityPercentage = Number(similarityStr);
+  const parsed = TA06Schema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) {
+    throw new Error(`ERR_VAL_INVALID_FORMAT: ${parsed.error.issues[0].message}`);
+  }
 
-  if (!submissionId) throw new Error("ERR_VAL_REQUIRED_FIELD: Submission ID wajib diisi");
-  if (!urlTurnitin) throw new Error("ERR_VAL_REQUIRED_FIELD: URL Turnitin wajib diisi");
-  if (similarityPercentage < 0 || similarityPercentage > 100) throw new Error("ERR_VAL_INVALID_FORMAT: Similarity harus 0-100");
+  const {
+    submission_id_turnitin: submissionId,
+    url_turnitin: urlTurnitin,
+    similarity_percentage: similarityPercentage,
+    dokumen_ids: dokumenIdsTA06Str,
+  } = parsed.data;
 
   const judulSkripsi = await prisma.judulSkripsi.findFirst({
     where: { mahasiswa_id: mhs.id, status: "aktif" },
@@ -788,7 +843,7 @@ export async function submitPengajuanTA06(formData: FormData) {
     });
   });
 
-  const dokumenIdsTA06 = (formData.get("dokumen_ids") as string)?.split(",").filter(Boolean).map(Number) ?? [];
+  const dokumenIdsTA06 = dokumenIdsTA06Str?.split(",").filter(Boolean).map(Number) ?? [];
   if (dokumenIdsTA06.length > 0) await linkDokumenToPengajuan(dokumenIdsTA06, pengajuan.id, userId);
 
   await reserveNomorSurat(pengajuan.id).catch(() => {});
@@ -822,13 +877,17 @@ export async function resubmitTA06(pengajuanId: number, formData: FormData) {
   const newRevisiKe = pengajuan.revisi_ke + 1;
   if (newRevisiKe > 3) throw new Error("ERR_BUS_MAX_RETRY_EXCEEDED: Batas maksimal 3x revisi sudah tercapai");
 
-  const submissionId = (formData.get("submission_id_turnitin") as string) || "";
-  const urlTurnitin = (formData.get("url_turnitin") as string) || "";
-  const similarityStr = (formData.get("similarity_percentage") as string) || "0";
-  const similarityPercentage = Number(similarityStr);
+  const parsed = TA06Schema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) {
+    throw new Error(`ERR_VAL_INVALID_FORMAT: ${parsed.error.issues[0].message}`);
+  }
 
-  if (!submissionId) throw new Error("ERR_VAL_REQUIRED_FIELD: Submission ID wajib diisi");
-  if (!urlTurnitin) throw new Error("ERR_VAL_REQUIRED_FIELD: URL Turnitin wajib diisi");
+  const {
+    submission_id_turnitin: submissionId,
+    url_turnitin: urlTurnitin,
+    similarity_percentage: similarityPercentage,
+    dokumen_ids: dokumenIdsResubmitStr,
+  } = parsed.data;
 
   const newFieldValues = {
     ...((pengajuan.pengajuan_data?.field_values as Record<string, unknown>) || {}),
@@ -855,7 +914,7 @@ export async function resubmitTA06(pengajuanId: number, formData: FormData) {
     data: { pengajuan_id: pengajuanId, action_code: "resubmit", performed_by: userId, from_status: "revision_required", to_status: "pending_kepala_lab", metadata: { revisi_ke: newRevisiKe } },
   });
 
-  const dokumenIdsResubmit = (formData.get("dokumen_ids") as string)?.split(",").filter(Boolean).map(Number) ?? [];
+  const dokumenIdsResubmit = dokumenIdsResubmitStr?.split(",").filter(Boolean).map(Number) ?? [];
   if (dokumenIdsResubmit.length > 0) await linkDokumenToPengajuan(dokumenIdsResubmit, pengajuanId, userId);
 
   redirect(`/pengajuan/${pengajuanId}`);
