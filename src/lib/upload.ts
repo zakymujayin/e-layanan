@@ -71,6 +71,21 @@ export async function linkDokumenToPengajuan(
 ) {
   if (dokumenIds.length === 0) return;
 
+  const pengajuan = await prisma.pengajuanLayanan.findUnique({
+    where: { id: pengajuanId },
+    select: { mahasiswa_id: true },
+  });
+  if (!pengajuan) throw new Error("ERR_BUS_PROFILE_NOT_FOUND: Pengajuan tidak ditemukan");
+
+  const uploader = await prisma.user.findUnique({
+    where: { id: uploadedBy },
+    select: { mahasiswa_id: true, system_role: true },
+  });
+  if (!uploader) throw new Error("ERR_AUTH_NOT_AUTHENTICATED");
+  if (uploader.system_role !== "super_admin" && uploader.mahasiswa_id !== pengajuan.mahasiswa_id) {
+    throw new Error("ERR_AUTH_INSUFFICIENT_ROLE: Bukan pemilik pengajuan");
+  }
+
   const owned = await prisma.pengajuanDokumen.findMany({
     where: { id: { in: dokumenIds } },
     select: { id: true, di_upload_oleh: true },
