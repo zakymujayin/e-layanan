@@ -55,8 +55,8 @@ export default async function VerifikasiPage({ searchParams }: PageProps) {
 
   if (token) {
     try {
-      if (isRateLimited(`verifikasi:${ip}`, 10, 60_000)) {
-        error = "Terlalu banyak percobaan. Coba lagi dalam 1 menit.";
+      if (isRateLimited(`verify:${token ?? "anon"}`, 10, 60 * 1000)) {
+        error = "Terlalu banyak percobaan verifikasi.";
       } else {
         verificationResult = await verifyToken(token, ip);
         if (!verificationResult) error = "Token tidak ditemukan atau tidak valid.";
