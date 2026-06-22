@@ -41,6 +41,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           password: string;
         };
         if (!identifier || !password) return null;
+
+        const rateLimitKey = `login:${identifier ?? "anon"}`;
+        if (isRateLimited(rateLimitKey, 5, 15 * 60 * 1000)) {
+          throw new Error("ERR_RATE_LIMIT: Terlalu banyak percobaan login. Coba lagi dalam 15 menit.");
+        }
+
         const user = await findUserByIdentifier(identifier);
         if (!user || !user.is_active) return null;
         const valid = await bcrypt.compare(password, user.password_hash);
