@@ -33,9 +33,10 @@ const statusLabels: Record<string, string> = {
 };
 
 export function StatusBadge({ status }: { status: string }) {
+  const label = statusLabels[status] || status;
   return (
-    <Badge className={statusColors[status] || "bg-gray-100 text-gray-800"}>
-      {statusLabels[status] || status}
+    <Badge className={statusColors[status] || "bg-gray-100 text-gray-800"} role="status" aria-label={`Status: ${label}`}>
+      {label}
     </Badge>
   );
 }

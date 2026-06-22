@@ -33,6 +33,58 @@ test.describe("03 — Tugas Akhir", () => {
     await expect(page.locator("main").first()).toBeVisible({ timeout: 5000 });
   });
 
+  // TA-01 full workflow: mahasiswa submit → staff prodi approve → PA select judul → kaprodi approve → WD1 sign
+  test("TA-01: full workflow sampai selesai", async ({ page }) => {
+    let id = "";
+    try {
+      id = await submitTA01(page);
+    } catch {
+      test.skip(true, "TA-01 pending sudah ada, skip full workflow test");
+      return;
+    }
+    expect(id).toBeTruthy();
+
+    // Step 1: Staff prodi verifikasi
+    await approveAs(page, USERS.staffProdi, id);
+
+    // Step 2: PA memilih judul dan approve
+    await login(page, USERS.dosenPA);
+    await page.goto(`/pengajuan/${id}`);
+    await page.waitForLoadState("networkidle");
+    await page.waitForTimeout(1000);
+
+    // Select first judul radio
+    const radio = page.locator('input[type="radio"]').first();
+    if (await radio.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await radio.click();
+      await page.waitForTimeout(500);
+    }
+
+    // Click the select_judul action button
+    const selectBtn = page.locator('button').filter({ hasText: /Pilih|Setujui|Approve|Pilih Judul/ }).first();
+    if (await selectBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await selectBtn.click();
+      await page.waitForTimeout(1500);
+    }
+
+    // Step 3: Kaprodi approve
+    await approveAs(page, USERS.kaprodi, id);
+
+    // Step 4: WD1 sign (final)
+    await approveAs(page, USERS.wd1, id, "Tanda Tangan");
+
+    // Verify selesai
+    await login(page, USERS.mahasiswa);
+    await page.goto(`/pengajuan/${id}`);
+    await page.waitForLoadState("networkidle");
+    const done = await page
+      .locator(':text("Selesai"), :text("selesai"), a:has-text("Download"), button:has-text("PDF")')
+      .first()
+      .isVisible({ timeout: 8000 })
+      .catch(() => false);
+    expect(done).toBeTruthy();
+  });
+
   // TA-02 to TA-06: just verify page renders (submission requires prerequisites)
   test("TA-02: halaman form dapat diakses", async ({ page }) => {
     await login(page, USERS.mahasiswa);

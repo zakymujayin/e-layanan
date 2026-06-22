@@ -15,19 +15,11 @@ export const USERS = {
 };
 
 export async function login(page: Page, user: { identifier: string; password: string }) {
-  for (let attempt = 0; attempt < 3; attempt++) {
-    try {
-      await page.goto("/login", { timeout: 15000 });
-      await page.fill('[name="identifier"]', user.identifier);
-      await page.fill('[name="password"]', user.password);
-      await page.click('button[type="submit"]');
-      await page.waitForURL(/\/(dashboard|pengajuan|admin)/, { timeout: 15000 });
-      return;
-    } catch (err) {
-      if (attempt === 2) throw err;
-      await new Promise(r => setTimeout(r, 3000));
-    }
-  }
+  await page.goto("/login", { timeout: 15000 });
+  await page.fill('[name="identifier"]', user.identifier);
+  await page.fill('[name="password"]', user.password);
+  await page.click('button[type="submit"]');
+  await page.waitForURL(/\/(dashboard|pengajuan|admin)/, { timeout: 20000 });
 }
 
 export async function logout(page: Page) {
