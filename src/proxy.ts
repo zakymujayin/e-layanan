@@ -3,7 +3,7 @@ import { authConfig } from "@/lib/auth.config";
 import { NextResponse } from "next/server";
 
 const publicRoutes = ["/login", "/register", "/verifikasi", "/lupa-password"];
-const publicPrefixes = ["/api/auth", "/api/register", "/_next", "/favicon.ico"];
+const publicPrefixes = ["/api/auth", "/api/register", "/api/test", "/api/cron", "/api/upload", "/_next", "/favicon.ico"];
 
 const { auth } = NextAuth(authConfig);
 

@@ -74,15 +74,15 @@ async function resolveRecipients(actorType: string, pengajuanId: number, exclude
         : actorType === "dosen_pa"
         ? { dosen: { assignments: { some: { pengajuan_id: pengajuanId, assignment_type: "dosen_pa" } } } }
         : actorType === "kepala_lab"
-        ? { structural_positions: { some: { position_code: "kepala_lab", is_active: true } } }
+        ? { dosen: { structural_positions: { some: { position_code: "kepala_lab", is_active: true } } } }
         : actorType === "sekprodi"
-        ? { structural_positions: { some: { position_code: "sekprodi", is_active: true } } }
+        ? { dosen: { structural_positions: { some: { position_code: "sekprodi", is_active: true } } } }
         : actorType === "wakil_dekan_1"
-        ? { structural_positions: { some: { position_code: "wakil_dekan_1", is_active: true } } }
+        ? { dosen: { structural_positions: { some: { position_code: "wakil_dekan_1", is_active: true } } } }
         : actorType === "dekan"
-        ? { structural_positions: { some: { position_code: "dekan", is_active: true } } }
+        ? { dosen: { structural_positions: { some: { position_code: "dekan", is_active: true } } } }
         : actorType === "kaprodi"
-        ? { structural_positions: { some: { position_code: "kaprodi", is_active: true } } }
+        ? { dosen: { structural_positions: { some: { position_code: "kaprodi", is_active: true } } } }
         : {}),
     },
     select: { id: true },
@@ -94,10 +94,17 @@ export async function executeWorkflowAction(input: {
   pengajuanId: number;
   action: string;
   data?: Record<string, unknown>;
+  /** FOR TEST ONLY: bypass auth with a specific userId. Do NOT use in production. */
+  __test_userId?: number;
 }) {
-  const session = await auth();
-  if (!session?.user?.id) throw new Error("ERR_AUTH_NOT_AUTHENTICATED");
-  const userId = Number(session.user.id);
+  let userId: number;
+  if (input.__test_userId != null && process.env.NODE_ENV !== "production") {
+    userId = input.__test_userId;
+  } else {
+    const session = await auth();
+    if (!session?.user?.id) throw new Error("ERR_AUTH_NOT_AUTHENTICATED");
+    userId = Number(session.user.id);
+  }
 
   const pengajuan = await prisma.pengajuanLayanan.findUnique({
     where: { id: input.pengajuanId },
