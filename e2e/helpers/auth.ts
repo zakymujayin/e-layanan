@@ -15,12 +15,12 @@ export const USERS = {
 };
 
 export async function login(page: Page, user: { identifier: string; password: string }) {
-  await page.goto("/login", { timeout: 15000, waitUntil: "domcontentloaded" });
+  await page.goto("/login", { timeout: 10000, waitUntil: "domcontentloaded" });
   await page.fill('[name="identifier"]', user.identifier);
   await page.fill('[name="password"]', user.password);
   await page.click('button[type="submit"]');
-  // Wait for dashboard content to appear (instead of waitForURL which can miss client-side navigation)
-  await expect(page.locator("main")).toBeVisible({ timeout: 20000 });
+  // Wait for dashboard content — more reliable than waitForURL for client-side nav
+  await expect(page.locator("main")).toBeVisible({ timeout: 15000 });
 }
 
 export async function logout(page: Page) {
