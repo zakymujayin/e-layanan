@@ -1,4 +1,4 @@
-import { Page } from "@playwright/test";
+import { Page, expect } from "@playwright/test";
 
 export const USERS = {
   mahasiswa: { identifier: "aini@student.uinbanten.ac.id", password: "password123" },
@@ -15,26 +15,12 @@ export const USERS = {
 };
 
 export async function login(page: Page, user: { identifier: string; password: string }) {
-  // Direct POST to credentials endpoint with form data.
-  // This sets the session cookie in the page context.
-  await page.request.post("http://localhost:3003/api/auth/callback/credentials", {
-    form: {
-      identifier: user.identifier,
-      password: user.password,
-      redirect: "false",
-      json: "true",
-    },
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-  }).catch(() => {}); // ignore response - cookies are set automatically
-
-  // Navigate to dashboard to verify
-  await page.goto("/dashboard", { timeout: 15000, waitUntil: "domcontentloaded" });
-  await page.waitForTimeout(500);
-
-  const url = page.url();
-  if (url.includes("/login")) {
-    throw new Error(`Login failed for ${user.identifier}: still on login page`);
-  }
+  await page.goto("/login", { timeout: 15000, waitUntil: "domcontentloaded" });
+  await page.fill('[name="identifier"]', user.identifier);
+  await page.fill('[name="password"]', user.password);
+  await page.click('button[type="submit"]');
+  // Wait for dashboard content to appear (instead of waitForURL which can miss client-side navigation)
+  await expect(page.locator("main")).toBeVisible({ timeout: 20000 });
 }
 
 export async function logout(page: Page) {
