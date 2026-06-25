@@ -77,7 +77,7 @@ export default async function DashboardLayout({
 
   const semesterOptions = semesters.map((s) => ({
     id: s.id,
-    label: `${s.nama_semester} ${s.tahun_akademik}`,
+    label: s.nama_semester,
     isActive: s.status === "active",
   }));
 

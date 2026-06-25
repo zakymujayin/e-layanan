@@ -19,6 +19,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { PageContainer } from "@/components/shared/page-container";
 
 export default async function PengajuanDetailPage({
   params,
@@ -113,14 +114,14 @@ export default async function PengajuanDetailPage({
   const taFields = fieldValues ? Object.entries(fieldValues).filter(([k]) => displayFields.includes(k) && fieldValues[k]) : [];
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-2">
-        <Link href="/pengajuan"><Button variant="ghost" size="sm">← Kembali</Button></Link>
+    <PageContainer className="space-y-6">
+      <div>
+        <Link href="/pengajuan"><Button variant="ghost" size="sm">← Kembali ke Daftar Pengajuan</Button></Link>
       </div>
 
       {/* Header Card */}
-      <Card className="shadow-sm rounded-xl">
-        <CardContent className="pt-5">
+      <Card className="rounded-xl border shadow-sm">
+        <CardContent className="p-5">
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
             <div className="min-w-0">
               <Badge variant="outline" className="mb-2 font-mono text-xs">{pengajuan.jenis_layanan.kode}</Badge>
@@ -131,7 +132,7 @@ export default async function PengajuanDetailPage({
             </div>
             <StatusBadge status={pengajuan.status} />
           </div>
-          <div className="pt-3 border-t">
+          <div className="pt-4 border-t">
             <ProgressBar workflowDefinitionId={pengajuan.workflow_definition_id} currentStepCode={pengajuan.current_step_code} />
           </div>
         </CardContent>
@@ -164,171 +165,180 @@ export default async function PengajuanDetailPage({
         </div>
       )}
 
-      <Card className="shadow-sm rounded-xl">
-        <CardContent className="pt-5">
-          <h3 className="mb-3 font-semibold text-sm uppercase tracking-wide text-muted-foreground">Data Pengajuan</h3>
-        {activeSnapshot && (
-          <div className="rounded-lg border border-dashed bg-muted/30 p-4 mb-4">
-            <p className="text-xs font-medium text-muted-foreground mb-2">
-              Data Versi {selectedVersi} (baca saja)
-            </p>
-            <div className="space-y-1 text-sm">
-              {Object.entries(activeSnapshot)
-                .filter(([, v]) => v !== null && v !== undefined && v !== "")
-                .map(([k, v]) => (
-                  <p key={k} className="text-muted-foreground">
-                    <span className="font-medium">{k.replace(/_/g, " ")}:</span> {String(v)}
+      {/* 60/40 GRID */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
+        {/* LEFT — 60% (3/5) */}
+        <div className="lg:col-span-3 space-y-5">
+          {/* Data Pengajuan Card */}
+          <Card className="rounded-xl border shadow-sm">
+            <CardContent className="p-5">
+              <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Data Pengajuan</h3>
+              {activeSnapshot && (
+                <div className="rounded-lg border border-dashed bg-muted/30 p-4 mb-4">
+                  <p className="text-xs font-medium text-muted-foreground mb-2">
+                    Data Versi {selectedVersi} (baca saja)
                   </p>
-                ))}
-            </div>
-          </div>
-        )}
-        {fieldValues && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-1 gap-x-4 text-sm">
-            {isAk && akFields.map(([k, v]) => (
-              <p key={k} className="text-muted-foreground truncate">{k.replace(/_/g, " ")}: {String(v ?? "")}</p>
-            ))}
-            {!isAk && taFields.map(([k, v]) => (
-              <p key={k} className="text-muted-foreground truncate">{k.replace(/_/g, " ")}: {String(v ?? "")}</p>
-            ))}
-            {!isAk && fieldValues && Object.entries(fieldValues)
-              .filter(([k]) => k.startsWith("judul_") && fieldValues[k] && k !== "judul_skripsi")
-              .map(([k, v]) => (
-                <p key={k} className="text-muted-foreground truncate">{k.replace(/_/g, " ")}: {String(v)}</p>
-              ))}
-            {String(fieldValues.judul_skripsi ?? "") && (
-              <p className="text-muted-foreground truncate">Judul Skripsi: {String(fieldValues.judul_skripsi)}</p>
-            )}
-            {String(fieldValues.pa_dosen_id ?? "") && (
-              <p className="text-xs text-muted-foreground">PA Dosen ID: {String(fieldValues.pa_dosen_id)}</p>
-            )}
-            {isAk && !akFields.length && !fieldValues.judul_skripsi && fieldValues.pa_dosen_id === undefined && (
-              <p className="text-xs text-muted-foreground italic col-span-full">Belum ada data input</p>
-            )}
-          </div>
-        )}
-      </CardContent>
-      </Card>
-
-      <Card className="shadow-sm rounded-xl">
-        <CardContent className="pt-5">
-          <h3 className="mb-3 font-semibold text-sm uppercase tracking-wide text-muted-foreground">Riwayat Aktivitas</h3>
-          <ActivityTimeline pengajuanId={pengajuan.id} />
-        </CardContent>
-      </Card>
-
-      {pengajuan.pengajuan_dokumen.length > 0 && (
-        <Card className="shadow-sm rounded-xl">
-          <CardContent className="pt-5">
-            <h3 className="mb-3 font-semibold text-sm uppercase tracking-wide text-muted-foreground">Dokumen ({pengajuan.pengajuan_dokumen.length})</h3>
-            <div className="space-y-3">
-            {pengajuan.pengajuan_dokumen.map((dok) => (
-              <div key={dok.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between rounded-md border p-3 gap-2">
-                <div className="flex flex-wrap items-center gap-2 text-sm min-w-0">
-                  <span className="font-medium truncate">{dok.dokumen_persyaratan?.nama_dokumen ?? dok.file_name}</span>
-                  {dok.is_auto_attached && (
-                    <span className="text-xs px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 shrink-0">Auto</span>
-                  )}
-                  <span className="text-muted-foreground text-xs shrink-0">
-                    (v{dok.versi} · {dok.file_name} · {(dok.file_size_bytes / 1024).toFixed(0)} KB)
-                  </span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 text-sm">
+                    {Object.entries(activeSnapshot)
+                      .filter(([, v]) => v !== null && v !== undefined && v !== "")
+                      .map(([k, v]) => (
+                        <p key={k} className="text-muted-foreground truncate">
+                          <span className="font-medium">{k.replace(/_/g, " ")}:</span> {String(v)}
+                        </p>
+                      ))}
+                  </div>
                 </div>
-                <a
-                  href={`/api/files/${dok.file_path}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm text-primary hover:underline shrink-0"
-                >
-                  Lihat
-                </a>
+              )}
+              {fieldValues && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-1 gap-x-4 text-sm">
+                  {isAk && akFields.map(([k, v]) => (
+                    <p key={k} className="text-muted-foreground truncate">{k.replace(/_/g, " ")}: {String(v ?? "")}</p>
+                  ))}
+                  {!isAk && taFields.map(([k, v]) => (
+                    <p key={k} className="text-muted-foreground truncate">{k.replace(/_/g, " ")}: {String(v ?? "")}</p>
+                  ))}
+                  {!isAk && fieldValues && Object.entries(fieldValues)
+                    .filter(([k]) => k.startsWith("judul_") && fieldValues[k] && k !== "judul_skripsi")
+                    .map(([k, v]) => (
+                      <p key={k} className="text-muted-foreground truncate">{k.replace(/_/g, " ")}: {String(v)}</p>
+                    ))}
+                  {String(fieldValues.judul_skripsi ?? "") && (
+                    <p className="text-muted-foreground truncate">Judul Skripsi: {String(fieldValues.judul_skripsi)}</p>
+                  )}
+                  {String(fieldValues.pa_dosen_id ?? "") && (
+                    <p className="text-xs text-muted-foreground">PA Dosen ID: {String(fieldValues.pa_dosen_id)}</p>
+                  )}
+                  {isAk && !akFields.length && !fieldValues.judul_skripsi && fieldValues.pa_dosen_id === undefined && (
+                    <p className="text-xs text-muted-foreground italic col-span-full">Belum ada data input</p>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Dokumen Card */}
+          {pengajuan.pengajuan_dokumen.length > 0 && (
+            <Card className="rounded-xl border shadow-sm">
+              <CardContent className="p-5">
+                <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Dokumen ({pengajuan.pengajuan_dokumen.length})</h3>
+                <div className="space-y-3">
+                  {pengajuan.pengajuan_dokumen.map((dok) => (
+                    <div key={dok.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between rounded-md border p-3 gap-2">
+                      <div className="flex flex-wrap items-center gap-2 text-sm min-w-0">
+                        <span className="font-medium truncate">{dok.dokumen_persyaratan?.nama_dokumen ?? dok.file_name}</span>
+                        {dok.is_auto_attached && (
+                          <span className="text-xs px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 shrink-0">Auto</span>
+                        )}
+                        <span className="text-muted-foreground text-xs shrink-0">({(dok.file_size_bytes / 1024).toFixed(0)} KB)</span>
+                      </div>
+                      <a
+                        href={`/api/files/${dok.file_path}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-primary hover:underline shrink-0"
+                      >
+                        Lihat
+                      </a>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Riwayat Card */}
+          <Card className="rounded-xl border shadow-sm">
+            <CardContent className="p-5">
+              <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Riwayat Aktivitas</h3>
+              <ActivityTimeline pengajuanId={pengajuan.id} />
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* RIGHT — 40% (2/5) — STICKY */}
+        <div className="lg:col-span-2 space-y-4 lg:sticky lg:top-20 self-start">
+          {currentStep && currentStep.actions.length > 0 && (
+            <ActionButtons
+              pengajuanId={pengajuan.id}
+              actions={currentStep.actions}
+              isPA={isPA}
+              judulCount={judulCount}
+            />
+          )}
+
+          {kode === "TA-02" && pengajuan.status === "pending_sekprodi" && (
+            <PembimbingPicker pengajuanId={pengajuan.id} />
+          )}
+
+          {kode === "TA-03" && pengajuan.status === "pending_staff_prodi" && (
+            <JadwalSidangInput pengajuanId={pengajuan.id} actionLabel="Verifikasi & Simpan Jadwal" />
+          )}
+
+          {kode === "TA-03" && pengajuan.status === "pending_sekprodi" && (
+            <PengujiPicker pengajuanId={pengajuan.id} />
+          )}
+
+          {kode === "TA-04" && pengajuan.status === "pending_staff_prodi" && (
+            <JadwalSidangInput pengajuanId={pengajuan.id} actionLabel="Verifikasi & Simpan Jadwal Komprehensif" />
+          )}
+
+          {kode === "TA-04" && pengajuan.status === "pending_sekprodi" && (
+            <PengujiKomprehensifPicker pengajuanId={pengajuan.id} />
+          )}
+
+          {pengajuan.status === "revision_required" && (
+            <ResubmitForm pengajuanId={pengajuan.id} layananKode={kode} />
+          )}
+
+          {kode === "TA-05" && pengajuan.status === "pending_sekprodi" && (
+            <MajelisPicker pengajuanId={pengajuan.id} />
+          )}
+
+          {kode === "TA-03" && pengajuan.status === "selesai" && isPengujiProposal && (
+            <NilaiSemproInput pengajuanId={pengajuan.id} />
+          )}
+
+          {kode === "TA-04" && pengajuan.status === "selesai" && isPengujiKomprehensif && (
+            <NilaiKomprehensifInput pengajuanId={pengajuan.id} />
+          )}
+
+          {kode === "TA-05" && pengajuan.status === "selesai" && isSekretarisSidang && (
+            <NilaiMunaqasyahInput pengajuanId={pengajuan.id} />
+          )}
+
+          {/* PDF Actions Card */}
+          <Card className="rounded-xl border shadow-sm">
+            <CardContent className="p-5">
+              <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Dokumen Output</h3>
+              <div className="flex flex-col gap-2">
+                {pengajuan.status !== "selesai" ? (
+                  <Link href={`/api/pengajuan/${pengajuan.id}/pdf?mode=preview`} target="_blank">
+                    <Button variant="outline" className="w-full" type="button">Pratinjau PDF</Button>
+                  </Link>
+                ) : (
+                  <>
+                    {hasSuratTugas && (
+                      <Link href={`/api/pengajuan/${pengajuan.id}/pdf?mode=final&jenis=surat_tugas`} className="w-full">
+                        <Button variant="outline" className="w-full" type="button">Unduh Surat Tugas</Button>
+                      </Link>
+                    )}
+                    {hasBeritaAcara && (
+                      <Link href={`/api/pengajuan/${pengajuan.id}/pdf?mode=final&jenis=berita_acara`} className="w-full">
+                        <Button className="w-full" type="button">Unduh Berita Acara & Nilai</Button>
+                      </Link>
+                    )}
+                    {!hasSuratTugas && !hasBeritaAcara && (
+                      <Link href={`/api/pengajuan/${pengajuan.id}/pdf?mode=final`} className="w-full">
+                        <Button className="w-full" type="button">Unduh PDF Final</Button>
+                      </Link>
+                    )}
+                  </>
+                )}
               </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-      )}
-
-      {currentStep && currentStep.actions.length > 0 && (
-        <ActionButtons
-          pengajuanId={pengajuan.id}
-          actions={currentStep.actions}
-          isPA={isPA}
-          judulCount={judulCount}
-        />
-      )}
-
-      {kode === "TA-02" && pengajuan.status === "pending_sekprodi" && (
-        <PembimbingPicker pengajuanId={pengajuan.id} />
-      )}
-
-      {kode === "TA-03" && pengajuan.status === "pending_staff_prodi" && (
-        <JadwalSidangInput pengajuanId={pengajuan.id} actionLabel="Verifikasi & Simpan Jadwal" />
-      )}
-
-      {kode === "TA-03" && pengajuan.status === "pending_sekprodi" && (
-        <PengujiPicker pengajuanId={pengajuan.id} />
-      )}
-
-      {kode === "TA-04" && pengajuan.status === "pending_staff_prodi" && (
-        <JadwalSidangInput pengajuanId={pengajuan.id} actionLabel="Verifikasi & Simpan Jadwal Komprehensif" />
-      )}
-
-      {kode === "TA-04" && pengajuan.status === "pending_sekprodi" && (
-        <PengujiKomprehensifPicker pengajuanId={pengajuan.id} />
-      )}
-
-      {pengajuan.status === "revision_required" && (
-        <ResubmitForm pengajuanId={pengajuan.id} layananKode={kode} />
-      )}
-
-      {kode === "TA-05" && pengajuan.status === "pending_sekprodi" && (
-        <MajelisPicker pengajuanId={pengajuan.id} />
-      )}
-
-      {kode === "TA-03" && pengajuan.status === "selesai" && isPengujiProposal && (
-        <NilaiSemproInput pengajuanId={pengajuan.id} />
-      )}
-
-      {kode === "TA-04" && pengajuan.status === "selesai" && isPengujiKomprehensif && (
-        <NilaiKomprehensifInput pengajuanId={pengajuan.id} />
-      )}
-
-      {kode === "TA-05" && pengajuan.status === "selesai" && isSekretarisSidang && (
-        <NilaiMunaqasyahInput pengajuanId={pengajuan.id} />
-      )}
-
-      {/* PDF Actions */}
-      <div className="flex items-center gap-3 pt-4 border-t">
-        {pengajuan.status !== "selesai" ? (
-          <Link
-            href={`/api/pengajuan/${pengajuan.id}/pdf?mode=preview`}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Button variant="outline" type="button">
-              Pratinjau PDF
-            </Button>
-          </Link>
-        ) : (
-          <div className="flex items-center gap-2 flex-wrap">
-            {hasSuratTugas && (
-              <Link href={`/api/pengajuan/${pengajuan.id}/pdf?mode=final&jenis=surat_tugas`}>
-                <Button variant="outline" type="button">Unduh Surat Tugas</Button>
-              </Link>
-            )}
-            {hasBeritaAcara && (
-              <Link href={`/api/pengajuan/${pengajuan.id}/pdf?mode=final&jenis=berita_acara`}>
-                <Button type="button">Unduh Berita Acara &amp; Nilai</Button>
-              </Link>
-            )}
-            {!hasSuratTugas && !hasBeritaAcara && (
-              <Link href={`/api/pengajuan/${pengajuan.id}/pdf?mode=final`}>
-                <Button type="button">Unduh PDF Final</Button>
-              </Link>
-            )}
-          </div>
-        )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
-    </div>
+    </PageContainer>
   );
 }

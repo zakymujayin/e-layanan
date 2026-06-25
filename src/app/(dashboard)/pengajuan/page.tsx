@@ -2,33 +2,20 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
-import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { StatusBadge } from "@/components/pengajuan/StatusBadge";
 import Link from "next/link";
-import { FileText, Plus, Search, Filter, X, ArrowRight } from "lucide-react";
+import { Plus, Search, Filter, X } from "lucide-react";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
-
-const STATUS_BORDER: Record<string, string> = {
-  pending_staff_prodi: "border-l-amber-500",
-  pending_pa: "border-l-blue-500",
-  pending_kaprodi: "border-l-purple-500",
-  pending_wd1: "border-l-indigo-500",
-  pending_sekprodi: "border-l-teal-500",
-  pending_dekan: "border-l-indigo-600",
-  pending_staff_akademik: "border-l-amber-500",
-  pending_kabag: "border-l-orange-500",
-  pending_kepala_lab: "border-l-cyan-500",
-  revision_required: "border-l-red-500",
-  selesai: "border-l-green-500",
-  terminated: "border-l-gray-400",
-};
+import { DataTable } from "@/components/shared/data-table";
+import { PageContainer } from "@/components/shared/page-container";
+import { TableRow, TableCell } from "@/components/ui/table";
 
 interface PageProps {
-  searchParams: Promise<{ status?: string; kode?: string; q?: string; period?: string }>;
+  searchParams: Promise<{ status?: string; kode?: string; q?: string; period?: string; prodi?: string }>;
 }
 
 export default async function PengajuanListPage({ searchParams }: PageProps) {
@@ -97,6 +84,7 @@ export default async function PengajuanListPage({ searchParams }: PageProps) {
   if (filters.status) filterWhere.status = filters.status;
   if (filters.kode) filterWhere.jenis_layanan = { kode: filters.kode };
   if (semesterIdParam) filterWhere.academic_period_id = Number(semesterIdParam);
+  if (filters.prodi) filterWhere.prodi_id = Number(filters.prodi);
   if (filters.q) {
     filterWhere.OR = [
       { kode_pengajuan: { contains: filters.q, mode: "insensitive" } },
@@ -107,14 +95,15 @@ export default async function PengajuanListPage({ searchParams }: PageProps) {
 
   const pengajuanList = await prisma.pengajuanLayanan.findMany({
     where: { ...scopeWhere, ...filterWhere },
-    include: { jenis_layanan: true, mahasiswa: true },
+    include: { jenis_layanan: true, mahasiswa: { include: { prodi: true } } },
     orderBy: { updated_at: "desc" },
     take: 50,
   });
 
-  const [layananList, periodList] = await Promise.all([
+  const [layananList, periodList, prodiList] = await Promise.all([
     prisma.jenisLayanan.findMany({ where: { is_active: true }, orderBy: { kode: "asc" }, select: { kode: true, nama: true } }),
     prisma.academicPeriod.findMany({ orderBy: { tanggal_mulai: "desc" }, take: 8, select: { id: true, nama_semester: true, tahun_akademik: true } }),
+    prisma.prodi.findMany({ where: { is_active: true }, orderBy: { nama: "asc" } }),
   ]);
 
   const STATUS_OPTIONS = [
@@ -124,10 +113,14 @@ export default async function PengajuanListPage({ searchParams }: PageProps) {
     "selesai", "terminated",
   ];
 
-  const hasFilters = filters.status || filters.kode || filters.q || filters.period;
+  const hasFilters = filters.status || filters.kode || filters.q || filters.period || filters.prodi;
+
+  const emptyMessage = isMahasiswa
+    ? "Ajukan layanan akademik baru melalui tombol Pengajuan Baru di atas."
+    : "Belum ada pengajuan yang masuk dalam scope Anda saat ini.";
 
   return (
-    <div className="space-y-6">
+    <PageContainer className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold">Pengajuan</h1>
@@ -143,7 +136,6 @@ export default async function PengajuanListPage({ searchParams }: PageProps) {
         )}
       </div>
 
-      {/* Filter Bar */}
       <form method="GET" className="flex flex-col sm:flex-row gap-2">
         <div className="flex flex-col sm:flex-row gap-2 flex-1">
           <div className="relative flex-1">
@@ -176,6 +168,16 @@ export default async function PengajuanListPage({ searchParams }: PageProps) {
               <option key={l.kode} value={l.kode}>{l.kode} · {l.nama}</option>
             ))}
           </select>
+          <select
+            name="prodi"
+            defaultValue={filters.prodi ?? ""}
+            className="h-9 rounded-md border border-input bg-background px-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring w-full sm:w-[180px]"
+          >
+            <option value="">Semua Prodi</option>
+            {prodiList.map(p => (
+              <option key={p.id} value={String(p.id)}>{p.nama}</option>
+            ))}
+          </select>
           {periodList.length > 0 && (
             <select
               name="period"
@@ -203,71 +205,57 @@ export default async function PengajuanListPage({ searchParams }: PageProps) {
         </div>
       </form>
 
-      {/* List */}
-      {pengajuanList.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted mb-4">
-            <FileText className="h-8 w-8 text-muted-foreground" />
-          </div>
-          <h3 className="text-lg font-semibold">Tidak ada pengajuan</h3>
-          <p className="mt-1 text-sm text-muted-foreground max-w-sm">
-            {isMahasiswa
-              ? "Ajukan layanan akademik baru melalui tombol Pengajuan Baru di atas."
-              : "Belum ada pengajuan yang masuk dalam scope Anda saat ini."}
-          </p>
-          {isMahasiswa && (
-            <Link href="/pengajuan/baru" className={cn(buttonVariants(), "mt-4 gap-2")}>
-              <Plus className="h-4 w-4" />
-              Pengajuan Baru
-            </Link>
-          )}
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {pengajuanList.map((p) => {
-            const border = STATUS_BORDER[p.status] ?? "border-l-muted";
-            return (
-              <Link key={p.id} href={`/pengajuan/${p.id}`}>
-                <Card className={`group border-l-4 ${border} cursor-pointer transition-all hover:shadow-md hover:bg-muted/30`}>
-                  <CardHeader className="p-4">
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-                      {/* LEFT: Main info */}
-                      <div className="flex-1 min-w-0 space-y-0.5">
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline" className="shrink-0 text-xs font-mono">
-                            {p.jenis_layanan?.kode}
-                          </Badge>
-                          <CardTitle className="truncate text-sm">
-                            {p.jenis_layanan?.nama}
-                          </CardTitle>
-                        </div>
-                        {!isMahasiswa && p.mahasiswa && (
-                          <p className="text-xs text-muted-foreground font-medium leading-relaxed">
-                            {p.mahasiswa.nama_lengkap} · {p.mahasiswa.nim}
-                          </p>
-                        )}
-                        <p className="text-xs text-muted-foreground leading-relaxed">
-                          {p.kode_pengajuan}
-                        </p>
-                      </div>
-                      {/* RIGHT: Meta info */}
-                      <div className="flex flex-row sm:flex-col items-center sm:items-end gap-2 sm:gap-1 shrink-0">
-                        <span className="text-xs text-muted-foreground">
-                          {format(p.updated_at, "d MMM yyyy", { locale: idLocale })}
-                        </span>
-                        <div className="flex items-center gap-2">
-                          <StatusBadge status={p.status} />
-                          <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:translate-x-0.5 transition-transform" />
-                        </div>
-                      </div>
-                    </div>
-                  </CardHeader>
-                </Card>
-              </Link>
-            );
-          })}
+      <DataTable
+        columns={["Kode", "Layanan", "Mahasiswa", "Prodi", "Status"]}
+        dataLength={pengajuanList.length}
+        emptyMessage={emptyMessage}
+      >
+        {pengajuanList.map(p => (
+          <Link key={p.id} href={`/pengajuan/${p.id}`} className="contents">
+            <TableRow className="cursor-pointer hover:bg-muted/50 group">
+              <TableCell className="font-mono text-xs whitespace-nowrap text-muted-foreground">
+                {p.kode_pengajuan}
+              </TableCell>
+              <TableCell>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="text-[10px] font-mono shrink-0">{p.jenis_layanan?.kode}</Badge>
+                  <span className="text-sm font-medium truncate max-w-[200px]">{p.jenis_layanan?.nama}</span>
+                </div>
+              </TableCell>
+              <TableCell>
+                {!isMahasiswa && p.mahasiswa ? (
+                  <div>
+                    <p className="text-sm font-medium">{p.mahasiswa.nama_lengkap}</p>
+                    <p className="text-xs text-muted-foreground">{p.mahasiswa.nim}</p>
+                  </div>
+                ) : isMahasiswa ? (
+                  <span className="text-xs text-muted-foreground">—</span>
+                ) : null}
+              </TableCell>
+              <TableCell>
+                <span className="text-xs font-medium">{p.mahasiswa?.prodi?.nama ?? "—"}</span>
+              </TableCell>
+              <TableCell>
+                <div className="flex flex-col gap-0.5">
+                  <StatusBadge status={p.status} />
+                  <span className="text-[10px] text-muted-foreground">
+                    {format(p.updated_at, "d MMM yyyy", { locale: idLocale })}
+                  </span>
+                </div>
+              </TableCell>
+            </TableRow>
+          </Link>
+        ))}
+      </DataTable>
+
+      {pengajuanList.length === 0 && isMahasiswa && (
+        <div className="flex justify-center">
+          <Link href="/pengajuan/baru" className={cn(buttonVariants(), "gap-2")}>
+            <Plus className="h-4 w-4" />
+            Pengajuan Baru
+          </Link>
         </div>
       )}
-    </div>
+    </PageContainer>
   );
 }

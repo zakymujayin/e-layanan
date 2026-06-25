@@ -2,32 +2,38 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { setPengujiTA03 } from "@/actions/pengajuan";
 import { executeWorkflowAction } from "@/lib/workflow/execute-action";
 
+interface Dosen {
+  id: number;
+  nidn: string;
+  nama_lengkap: string;
+}
+
 export function PengujiPicker({ pengajuanId }: { pengajuanId: number }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [p1Nidn, setP1Nidn] = useState("");
-  const [p2Nidn, setP2Nidn] = useState("");
-  const [dosen, setDosen] = useState<any[]>([]);
+  const [p1Id, setP1Id] = useState("");
+  const [p2Id, setP2Id] = useState("");
+  const [dosen, setDosen] = useState<Dosen[]>([]);
 
   useEffect(() => {
     fetch("/api/dosen").then(r => r.json()).then(d => setDosen(d.data || d));
   }, []);
 
   async function handleSubmit() {
-    const p1 = dosen.find(d => d.nidn === p1Nidn);
-    const p2 = dosen.find(d => d.nidn === p2Nidn);
-    if (!p1 || !p2) { toast.error("Dosen tidak ditemukan"); return; }
-    if (p1.id === p2.id) { toast.error("Penguji 1 dan 2 harus berbeda"); return; }
+    const id1 = Number(p1Id);
+    const id2 = Number(p2Id);
+    if (!id1 || !id2) { toast.error("Semua penguji harus dipilih"); return; }
+    if (id1 === id2) { toast.error("Penguji 1 dan 2 harus berbeda"); return; }
     setLoading(true);
     try {
-      await setPengujiTA03(pengajuanId, { penguji_1_dosen_id: p1.id, penguji_2_dosen_id: p2.id });
+      await setPengujiTA03(pengajuanId, { penguji_1_dosen_id: id1, penguji_2_dosen_id: id2 });
       await executeWorkflowAction({ pengajuanId, action: "approve" });
       toast.success("Penguji ditetapkan");
       router.refresh();
@@ -38,23 +44,41 @@ export function PengujiPicker({ pengajuanId }: { pengajuanId: number }) {
     }
   }
 
+  if (dosen.length === 0) return <p className="text-sm text-muted-foreground">Memuat data dosen...</p>;
+
   return (
     <div className="space-y-4 rounded-lg border p-4">
       <h3 className="font-semibold">Penetapan Penguji</h3>
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label>Penguji 1 (NIDN)</Label>
-          <Input placeholder="0115098501" value={p1Nidn} onChange={e => setP1Nidn(e.target.value)} />
-          {p1Nidn && dosen.find(d => d.nidn === p1Nidn) && (
-            <p className="text-sm text-green-600">{dosen.find(d => d.nidn === p1Nidn)!.nama_lengkap}</p>
-          )}
+          <Label>Penguji 1</Label>
+          <Select value={p1Id} onValueChange={(v) => setP1Id(v ?? "")}>
+            <SelectTrigger>
+              <SelectValue placeholder="Pilih dosen..." />
+            </SelectTrigger>
+            <SelectContent>
+              {dosen.map((d) => (
+                <SelectItem key={d.id} value={String(d.id)}>
+                  {d.nama_lengkap} (NIDN: {d.nidn})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         <div className="space-y-2">
-          <Label>Penguji 2 (NIDN)</Label>
-          <Input placeholder="0220077301" value={p2Nidn} onChange={e => setP2Nidn(e.target.value)} />
-          {p2Nidn && dosen.find(d => d.nidn === p2Nidn) && (
-            <p className="text-sm text-green-600">{dosen.find(d => d.nidn === p2Nidn)!.nama_lengkap}</p>
-          )}
+          <Label>Penguji 2</Label>
+          <Select value={p2Id} onValueChange={(v) => setP2Id(v ?? "")}>
+            <SelectTrigger>
+              <SelectValue placeholder="Pilih dosen..." />
+            </SelectTrigger>
+            <SelectContent>
+              {dosen.map((d) => (
+                <SelectItem key={d.id} value={String(d.id)}>
+                  {d.nama_lengkap} (NIDN: {d.nidn})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
       <Button onClick={handleSubmit} disabled={loading}>

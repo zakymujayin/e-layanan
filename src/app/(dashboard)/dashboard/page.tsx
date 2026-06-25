@@ -7,21 +7,9 @@ import Link from "next/link";
 import { FileText, Clock, CheckCircle, Users, AlertCircle, ArrowRight, Plus } from "lucide-react";
 import { StatusBadge } from "@/components/pengajuan/StatusBadge";
 import { Button } from "@/components/ui/button";
-
-function StatCard({ label, value, icon: Icon, color }: { label: string; value: string | number; icon: React.ComponentType<{ className?: string }>; color: string }) {
-  return (
-    <Card className="relative overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-      <div className={`absolute top-0 left-0 w-1 h-full ${color}`} />
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">{label}</CardTitle>
-        <Icon className={`h-4 w-4 ${color.replace("bg-", "text-")}`} />
-      </CardHeader>
-      <CardContent>
-        <p className="text-3xl font-bold tracking-tight">{value}</p>
-      </CardContent>
-    </Card>
-  );
-}
+import { HeroWelcome } from "@/components/shared/hero-welcome";
+import { StatCard } from "@/components/shared/stat-card";
+import { PageContainer } from "@/components/shared/page-container";
 
 const ROLE_LABELS: Record<string, string> = {
   mahasiswa: "Mahasiswa",
@@ -324,35 +312,18 @@ export default async function DashboardPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="rounded-xl border bg-gradient-to-r from-primary/5 via-primary/3 to-transparent p-5 sm:p-6">
-        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-          <div>
-            <p className="text-sm font-medium text-muted-foreground">Selamat datang,</p>
-            <h1 className="text-2xl font-bold tracking-tight">{userName}</h1>
-            <div className="mt-2 flex flex-wrap items-center gap-1.5">
-              {roleBadges.map((label) => (
-                <Badge key={label} variant="secondary" className="text-xs">{label}</Badge>
-              ))}
-              {effectiveRoles.includes("mahasiswa") && user.mahasiswa?.prodi && (
-                <span className="text-xs text-muted-foreground">· {user.mahasiswa.prodi.nama}</span>
-              )}
-            </div>
-            <p className="mt-3 text-sm text-muted-foreground">{contextMessage}</p>
-          </div>
-          {effectiveRoles.includes("mahasiswa") && (
-            <Link href="/pengajuan/baru">
-              <Button size="sm"><Plus className="mr-1.5 h-4 w-4" />Ajukan Layanan</Button>
-            </Link>
-          )}
-        </div>
-      </div>
+    <PageContainer className="space-y-6">
+      <HeroWelcome
+        userName={userName}
+        roleLabel={ROLE_LABELS[displayRole] ?? displayRole}
+        description={contextMessage}
+      />
 
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
-        <StatCard label={stat1.label} value={stat1.value} icon={FileText} color="bg-blue-500" />
-        <StatCard label={stat2.label} value={stat2.value} icon={Clock} color="bg-amber-500" />
-        <StatCard label={stat3.label} value={stat3.value} icon={CheckCircle} color="bg-green-500" />
-        <StatCard label={stat4.label} value={stat4.value} icon={Users} color="bg-purple-500" />
+        <StatCard title={stat1.label} value={stat1.value} icon={FileText} color="primary" />
+        <StatCard title={stat2.label} value={stat2.value} icon={Clock} color="warning" />
+        <StatCard title={stat3.label} value={stat3.value} icon={CheckCircle} color="success" />
+        <StatCard title={stat4.label} value={stat4.value} icon={Users} color="accent" />
       </div>
 
       {revisiTasks.length > 0 && (
@@ -442,6 +413,6 @@ export default async function DashboardPage() {
           )}
         </Card>
       )}
-    </div>
+    </PageContainer>
   );
 }

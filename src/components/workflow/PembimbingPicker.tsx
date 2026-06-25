@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { setPembimbingTA02 } from "@/actions/pengajuan";
 
@@ -17,8 +18,8 @@ interface Dosen {
 export function PembimbingPicker({ pengajuanId }: { pengajuanId: number }) {
   const router = useRouter();
   const [dosen, setDosen] = useState<Dosen[]>([]);
-  const [p1Nidn, setP1Nidn] = useState("");
-  const [p2Nidn, setP2Nidn] = useState("");
+  const [p1Id, setP1Id] = useState("");
+  const [p2Id, setP2Id] = useState("");
   const [nomor, setNomor] = useState("");
   const [tanggal, setTanggal] = useState(new Date().toISOString().split("T")[0]);
   const [error, setError] = useState("");
@@ -32,13 +33,13 @@ export function PembimbingPicker({ pengajuanId }: { pengajuanId: number }) {
   }, []);
 
   async function handleSubmit() {
-    const p1 = dosen.find((d) => d.nidn === p1Nidn);
-    const p2 = dosen.find((d) => d.nidn === p2Nidn);
-    if (!p1 || !p2) {
-      setError("Dosen tidak ditemukan");
+    const id1 = Number(p1Id);
+    const id2 = Number(p2Id);
+    if (!id1 || !id2) {
+      setError("Semua pembimbing harus dipilih");
       return;
     }
-    if (p1.id === p2.id) {
+    if (id1 === id2) {
       setError("Pembimbing 1 dan 2 harus berbeda");
       return;
     }
@@ -50,8 +51,8 @@ export function PembimbingPicker({ pengajuanId }: { pengajuanId: number }) {
     setLoading(true);
     try {
       await setPembimbingTA02(pengajuanId, {
-        pembimbing_1_dosen_id: p1.id,
-        pembimbing_2_dosen_id: p2.id,
+        pembimbing_1_dosen_id: id1,
+        pembimbing_2_dosen_id: id2,
         nomor_surat_prodi: nomor,
         tanggal_surat_prodi: tanggal,
       });
@@ -71,18 +72,34 @@ export function PembimbingPicker({ pengajuanId }: { pengajuanId: number }) {
       <h3 className="font-semibold">Penetapan Pembimbing</h3>
       <div className="grid gap-4">
         <div className="space-y-2">
-          <Label>Pembimbing 1 (NIDN)</Label>
-          <Input placeholder="0115098501" value={p1Nidn} onChange={(e) => setP1Nidn(e.target.value)} />
-          {p1Nidn && dosen.find((d) => d.nidn === p1Nidn) && (
-            <p className="text-sm text-green-600">{dosen.find((d) => d.nidn === p1Nidn)!.nama_lengkap}</p>
-          )}
+          <Label>Pembimbing 1</Label>
+          <Select value={p1Id} onValueChange={(v) => setP1Id(v ?? "")}>
+            <SelectTrigger>
+              <SelectValue placeholder="Pilih dosen..." />
+            </SelectTrigger>
+            <SelectContent>
+              {dosen.map((d) => (
+                <SelectItem key={d.id} value={String(d.id)}>
+                  {d.nama_lengkap} (NIDN: {d.nidn})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         <div className="space-y-2">
-          <Label>Pembimbing 2 (NIDN)</Label>
-          <Input placeholder="0220077301" value={p2Nidn} onChange={(e) => setP2Nidn(e.target.value)} />
-          {p2Nidn && dosen.find((d) => d.nidn === p2Nidn) && (
-            <p className="text-sm text-green-600">{dosen.find((d) => d.nidn === p2Nidn)!.nama_lengkap}</p>
-          )}
+          <Label>Pembimbing 2</Label>
+          <Select value={p2Id} onValueChange={(v) => setP2Id(v ?? "")}>
+            <SelectTrigger>
+              <SelectValue placeholder="Pilih dosen..." />
+            </SelectTrigger>
+            <SelectContent>
+              {dosen.map((d) => (
+                <SelectItem key={d.id} value={String(d.id)}>
+                  {d.nama_lengkap} (NIDN: {d.nidn})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         <div className="space-y-2">
           <Label>Nomor Surat Permohonan Prodi</Label>
