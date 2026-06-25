@@ -4,7 +4,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
   return (
     <div className="flex min-h-screen">
       {/* KIRI: Brand Panel — desktop only */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-primary via-primary/90 to-emerald-700 flex-col justify-center items-center text-primary-foreground p-12 relative overflow-hidden">
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-primary via-primary/90 to-blue-900 flex-col justify-center items-center text-primary-foreground p-12 relative overflow-hidden">
         <div className="absolute top-[-120px] right-[-120px] w-[450px] h-[450px] rounded-full bg-white/5" />
         <div className="absolute bottom-[-80px] left-[-80px] w-[300px] h-[300px] rounded-full bg-white/[0.04]" />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full border border-white/[0.06]" />
@@ -14,7 +14,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         <p className="text-xl font-medium opacity-90 relative z-10">
           Sistem Informasi Layanan Akademik
         </p>
-        <div className="w-20 h-[2px] bg-white/30 rounded-full my-5" />
+        <div className="w-20 h-[2px] bg-amber-400/60 rounded-full my-5" />
         <p className="text-base opacity-70 relative z-10">
           Fakultas Ushuluddin dan Adab
         </p>
