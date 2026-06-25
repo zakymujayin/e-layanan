@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { executeWorkflowAction } from "@/lib/workflow/execute-action";
 import type { WorkflowStepAction } from "@/generated/prisma/client";
 import { CheckCircle, XCircle, CornerUpLeft, Pen, AlertTriangle, Loader2 } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 
 const STATUS_LABELS: Record<string, string> = {
   submitted: "Mahasiswa (awal)",
@@ -130,69 +131,35 @@ export function ActionButtons({ pengajuanId, actions, isPA, judulCount }: Action
       <div className="flex flex-col gap-3">
         {actions.map(a => {
           const cfg = ACTION_CONFIG[a.action_code] ?? { icon: CheckCircle, variant: "default" as const, label: a.label };
-          const needsReason = a.requires_reason || a.action_code === "reject_to_submitter" || a.action_code === "reject_to_step";
+          const isCurrentLoading = loading === a.action_code;
           const actionConfig = a.actionConfig as { allow_target?: string[] } | null;
           const allowTarget = actionConfig?.allow_target ?? [];
           const needsTarget = a.action_code === "reject_to_step" && allowTarget.length > 0;
-          const isCurrentLoading = loading === a.action_code;
 
           return (
             <div key={a.id} className="flex flex-col gap-2">
-              {/* Target dropdown for reject_to_step */}
-              {needsTarget && (
-                <div>
-                  <Label className="text-xs font-medium mb-1 block">Kembalikan ke:</Label>
-                  <select
-                    value={targetStatus}
-                    onChange={e => setTargetStatus(e.target.value)}
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                  >
-                    <option value="">Pilih tujuan pengembalian...</option>
-                    {allowTarget.map(t => (
-                      <option key={t} value={t}>{STATUS_LABELS[t] ?? t.replace(/_/g, " ")}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              {/* Alasan input + button row */}
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                {needsReason && (
-                  <input
-                    type="text"
-                    placeholder="Alasan (wajib)..."
-                    value={alasan}
-                    onChange={e => setAlasan(e.target.value)}
-                    className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring min-w-0"
-                  />
+              <Button
+                variant={cfg.variant}
+                size="lg"
+                disabled={loading !== null}
+                onClick={() => setConfirmAction(a.action_code)}
+                className="gap-2 w-full"
+              >
+                {isCurrentLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <cfg.icon className="h-4 w-4" />
                 )}
-                <Button
-                  variant={cfg.variant}
-                  size={needsReason ? "default" : "lg"}
-                  disabled={
-                    loading !== null ||
-                    (needsReason && !alasan.trim()) ||
-                    (needsTarget && !targetStatus)
-                  }
-                  onClick={() => setConfirmAction(a.action_code)}
-                  className="gap-2 shrink-0 w-full sm:w-auto"
-                >
-                  {isCurrentLoading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <cfg.icon className="h-4 w-4" />
-                  )}
-                  {isCurrentLoading ? "Memproses..." : cfg.label}
-                </Button>
-              </div>
+                {isCurrentLoading ? "Memproses..." : cfg.label}
+              </Button>
             </div>
           );
         })}
       </div>
 
       {/* AlertDialog — all actions require confirmation */}
-      <AlertDialog open={confirmAction !== null} onOpenChange={() => setConfirmAction(null)}>
-        <AlertDialogContent className="max-w-sm">
+      <AlertDialog open={confirmAction !== null} onOpenChange={(open) => { if (!open) { setConfirmAction(null); setAlasan(""); setTargetStatus(""); } }}>
+        <AlertDialogContent className="max-w-md">
           <AlertDialogHeader>
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 mb-2">
               <AlertTriangle className="h-6 w-6 text-primary" />
@@ -202,10 +169,54 @@ export function ActionButtons({ pengajuanId, actions, isPA, judulCount }: Action
               {confirmDialog?.desc}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
-            <AlertDialogCancel className="w-full sm:w-auto">Batal</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmAndExecute} className="w-full sm:w-auto">
-              Ya, Lanjutkan
+
+          {/* Alasan textarea — for destructive actions */}
+          {(confirmAction === "reject_to_submitter" || confirmAction === "reject_to_step") && (
+            <div className="space-y-2 mt-2">
+              <Label className="text-sm font-medium">Alasan Penolakan</Label>
+              <Textarea
+                placeholder="Tulis alasan penolakan dengan jelas..."
+                value={alasan}
+                onChange={e => setAlasan(e.target.value)}
+                rows={3}
+                className="resize-none"
+              />
+            </div>
+          )}
+
+          {/* Target dropdown — for reject_to_step */}
+          {confirmAction === "reject_to_step" && (() => {
+            const actionConfig = actions.find(a => a.action_code === "reject_to_step")?.actionConfig as { allow_target?: string[] } | undefined;
+            const allowTarget = actionConfig?.allow_target ?? [];
+            if (allowTarget.length > 0) return (
+              <div className="space-y-2 mt-2">
+                <Label className="text-sm font-medium">Kembalikan ke</Label>
+                <select
+                  value={targetStatus}
+                  onChange={e => setTargetStatus(e.target.value)}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                >
+                  <option value="">Pilih tujuan...</option>
+                  {allowTarget.map(t => (
+                    <option key={t} value={t}>{STATUS_LABELS[t] ?? t.replace(/_/g, " ")}</option>
+                  ))}
+                </select>
+              </div>
+            );
+            return null;
+          })()}
+
+          <AlertDialogFooter className="mt-4 flex-col sm:flex-row gap-2">
+            <AlertDialogCancel className="w-full sm:w-auto" onClick={() => { setAlasan(""); setTargetStatus(""); }}>Batal</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmAndExecute}
+              className="w-full sm:w-auto"
+              disabled={
+                (confirmAction === "reject_to_submitter" || confirmAction === "reject_to_step") && !alasan.trim()
+                || (confirmAction === "reject_to_step" && !targetStatus)
+              }
+            >
+              {(confirmAction === "reject_to_submitter" || confirmAction === "reject_to_step") ? "Kirim" : "Ya, Lanjutkan"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

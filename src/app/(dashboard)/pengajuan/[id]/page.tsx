@@ -113,6 +113,38 @@ export default async function PengajuanDetailPage({
   const akFields = fieldValues ? Object.entries(fieldValues).filter(([k]) => displayFields.includes(k) && fieldValues[k]) : [];
   const taFields = fieldValues ? Object.entries(fieldValues).filter(([k]) => displayFields.includes(k) && fieldValues[k]) : [];
 
+  const FIELD_LABELS: Record<string, string> = {
+    peruntukan: "Peruntukan", judul_1: "Judul 1", judul_2: "Judul 2", judul_3: "Judul 3",
+    judul_4: "Judul 4", judul_5: "Judul 5", judul_skripsi: "Judul Skripsi",
+    submission_id_turnitin: "ID Submission", url_turnitin: "URL Turnitin",
+    similarity_percentage: "Similarity", orang_tua_pns: "Orang Tua PNS",
+    nama_orang_tua: "Nama Orang Tua", nip_orang_tua: "NIP Orang Tua",
+    pangkat_golongan: "Pangkat/Golongan", jabatan_orang_tua: "Jabatan",
+    instansi_orang_tua: "Instansi Orang Tua", hubungan_orang_tua: "Hubungan",
+    mata_kuliah: "Mata Kuliah", instansi_tujuan: "Instansi Tujuan",
+    pejabat_tujuan: "Pejabat Tujuan", alamat_instansi: "Alamat Instansi",
+    lokasi_observasi: "Lokasi Observasi", lokasi_penelitian: "Lokasi Penelitian",
+    judul_penelitian: "Judul Penelitian", tujuan_penelitian: "Tujuan Penelitian",
+    bidang_magang: "Bidang Magang", tanggal_mulai: "Tanggal Mulai",
+    tanggal_selesai: "Tanggal Selesai", tipe_rekomendasi: "Tipe Rekomendasi",
+    tujuan_rekomendasi: "Tujuan", pihak_penerima: "Pihak Penerima",
+    pa_dosen_id: "Pembimbing Akademik", dosen_pembimbing_observasi_id: "Dosen Pembimbing",
+    dosen_pembimbing_magang_id: "Dosen Pembimbing Magang",
+  };
+
+  function formatFieldValue(key: string, value: unknown): string {
+    if (value === null || value === undefined) return "—";
+    const s = String(value);
+    if (key === "orang_tua_pns") return s === "ya" ? "Ya" : "Tidak";
+    if ((key.includes("tanggal") || key === "tanggal_mulai" || key === "tanggal_selesai") && s.match(/^\d{4}-\d{2}-\d{2}/)) {
+      try { return new Date(s).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" }); }
+      catch { return s; }
+    }
+    if (key === "similarity_percentage") return `${s}%`;
+    if (key.endsWith("_dosen_id") || key === "pa_dosen_id") return `ID Dosen: ${s}`;
+    return s;
+  }
+
   return (
     <PageContainer className="space-y-6">
       <div>
@@ -175,46 +207,92 @@ export default async function PengajuanDetailPage({
               <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Data Pengajuan</h3>
               {activeSnapshot && (
                 <div className="rounded-lg border border-dashed bg-muted/30 p-4 mb-4">
-                  <p className="text-xs font-medium text-muted-foreground mb-2">
-                    Data Versi {selectedVersi} (baca saja)
-                  </p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 text-sm">
+                  <p className="text-xs font-medium text-muted-foreground mb-2">Versi {selectedVersi} (baca saja)</p>
+                  <div className="divide-y divide-border/50">
                     {Object.entries(activeSnapshot)
                       .filter(([, v]) => v !== null && v !== undefined && v !== "")
                       .map(([k, v]) => (
-                        <p key={k} className="text-muted-foreground truncate">
-                          <span className="font-medium">{k.replace(/_/g, " ")}:</span> {String(v)}
-                        </p>
+                        <div key={k} className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 py-2 first:pt-0 last:pb-0">
+                          <dt className="text-xs font-medium text-muted-foreground uppercase tracking-wide w-40 shrink-0">{FIELD_LABELS[k] ?? k.replace(/_/g, " ")}</dt>
+                          <dd className="text-sm">{formatFieldValue(k, v)}</dd>
+                        </div>
                       ))}
                   </div>
                 </div>
               )}
               {fieldValues && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-1 gap-x-4 text-sm">
+                <div className="divide-y divide-border/50">
                   {isAk && akFields.map(([k, v]) => (
-                    <p key={k} className="text-muted-foreground truncate">{k.replace(/_/g, " ")}: {String(v ?? "")}</p>
+                    <div key={k} className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 py-2.5 first:pt-0 last:pb-0">
+                      <dt className="text-xs font-medium text-muted-foreground uppercase tracking-wide w-40 shrink-0">{FIELD_LABELS[k] ?? k.replace(/_/g, " ")}</dt>
+                      <dd className="text-sm">{formatFieldValue(k, v)}</dd>
+                    </div>
                   ))}
                   {!isAk && taFields.map(([k, v]) => (
-                    <p key={k} className="text-muted-foreground truncate">{k.replace(/_/g, " ")}: {String(v ?? "")}</p>
+                    <div key={k} className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 py-2.5 first:pt-0 last:pb-0">
+                      <dt className="text-xs font-medium text-muted-foreground uppercase tracking-wide w-40 shrink-0">{FIELD_LABELS[k] ?? k.replace(/_/g, " ")}</dt>
+                      <dd className="text-sm">{formatFieldValue(k, v)}</dd>
+                    </div>
                   ))}
                   {!isAk && fieldValues && Object.entries(fieldValues)
                     .filter(([k]) => k.startsWith("judul_") && fieldValues[k] && k !== "judul_skripsi")
                     .map(([k, v]) => (
-                      <p key={k} className="text-muted-foreground truncate">{k.replace(/_/g, " ")}: {String(v)}</p>
+                      <div key={k} className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 py-2.5 first:pt-0 last:pb-0">
+                        <dt className="text-xs font-medium text-muted-foreground uppercase tracking-wide w-40 shrink-0">{FIELD_LABELS[k] ?? k.replace(/_/g, " ")}</dt>
+                        <dd className="text-sm leading-relaxed">{formatFieldValue(k, v)}</dd>
+                      </div>
                     ))}
                   {String(fieldValues.judul_skripsi ?? "") && (
-                    <p className="text-muted-foreground truncate">Judul Skripsi: {String(fieldValues.judul_skripsi)}</p>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 py-2.5 first:pt-0 last:pb-0">
+                      <dt className="text-xs font-medium text-muted-foreground uppercase tracking-wide w-40 shrink-0">Judul Skripsi</dt>
+                      <dd className="text-sm font-medium leading-relaxed">{String(fieldValues.judul_skripsi)}</dd>
+                    </div>
                   )}
                   {String(fieldValues.pa_dosen_id ?? "") && (
-                    <p className="text-xs text-muted-foreground">PA Dosen ID: {String(fieldValues.pa_dosen_id)}</p>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 py-2.5 first:pt-0 last:pb-0">
+                      <dt className="text-xs font-medium text-muted-foreground uppercase tracking-wide w-40 shrink-0">Pembimbing Akademik</dt>
+                      <dd className="text-sm">ID Dosen: {String(fieldValues.pa_dosen_id)}</dd>
+                    </div>
                   )}
                   {isAk && !akFields.length && !fieldValues.judul_skripsi && fieldValues.pa_dosen_id === undefined && (
-                    <p className="text-xs text-muted-foreground italic col-span-full">Belum ada data input</p>
+                    <p className="text-xs text-muted-foreground italic py-2">Belum ada data input</p>
                   )}
                 </div>
               )}
             </CardContent>
           </Card>
+
+          {/* Penjadwalan & Penetapan */}
+          {kode === "TA-02" && pengajuan.status === "pending_sekprodi" && (
+            <PembimbingPicker pengajuanId={pengajuan.id} />
+          )}
+          {kode === "TA-03" && pengajuan.status === "pending_staff_prodi" && (
+            <JadwalSidangInput pengajuanId={pengajuan.id} actionLabel="Verifikasi & Simpan Jadwal" />
+          )}
+          {kode === "TA-03" && pengajuan.status === "pending_sekprodi" && (
+            <PengujiPicker pengajuanId={pengajuan.id} />
+          )}
+          {kode === "TA-04" && pengajuan.status === "pending_staff_prodi" && (
+            <JadwalSidangInput pengajuanId={pengajuan.id} actionLabel="Verifikasi & Simpan Jadwal Komprehensif" />
+          )}
+          {kode === "TA-04" && pengajuan.status === "pending_sekprodi" && (
+            <PengujiKomprehensifPicker pengajuanId={pengajuan.id} />
+          )}
+          {pengajuan.status === "revision_required" && (
+            <ResubmitForm pengajuanId={pengajuan.id} layananKode={kode} />
+          )}
+          {kode === "TA-05" && pengajuan.status === "pending_sekprodi" && (
+            <MajelisPicker pengajuanId={pengajuan.id} />
+          )}
+          {kode === "TA-03" && pengajuan.status === "selesai" && isPengujiProposal && (
+            <NilaiSemproInput pengajuanId={pengajuan.id} />
+          )}
+          {kode === "TA-04" && pengajuan.status === "selesai" && isPengujiKomprehensif && (
+            <NilaiKomprehensifInput pengajuanId={pengajuan.id} />
+          )}
+          {kode === "TA-05" && pengajuan.status === "selesai" && isSekretarisSidang && (
+            <NilaiMunaqasyahInput pengajuanId={pengajuan.id} />
+          )}
 
           {/* Dokumen Card */}
           {pengajuan.pengajuan_dokumen.length > 0 && (
@@ -264,46 +342,6 @@ export default async function PengajuanDetailPage({
               isPA={isPA}
               judulCount={judulCount}
             />
-          )}
-
-          {kode === "TA-02" && pengajuan.status === "pending_sekprodi" && (
-            <PembimbingPicker pengajuanId={pengajuan.id} />
-          )}
-
-          {kode === "TA-03" && pengajuan.status === "pending_staff_prodi" && (
-            <JadwalSidangInput pengajuanId={pengajuan.id} actionLabel="Verifikasi & Simpan Jadwal" />
-          )}
-
-          {kode === "TA-03" && pengajuan.status === "pending_sekprodi" && (
-            <PengujiPicker pengajuanId={pengajuan.id} />
-          )}
-
-          {kode === "TA-04" && pengajuan.status === "pending_staff_prodi" && (
-            <JadwalSidangInput pengajuanId={pengajuan.id} actionLabel="Verifikasi & Simpan Jadwal Komprehensif" />
-          )}
-
-          {kode === "TA-04" && pengajuan.status === "pending_sekprodi" && (
-            <PengujiKomprehensifPicker pengajuanId={pengajuan.id} />
-          )}
-
-          {pengajuan.status === "revision_required" && (
-            <ResubmitForm pengajuanId={pengajuan.id} layananKode={kode} />
-          )}
-
-          {kode === "TA-05" && pengajuan.status === "pending_sekprodi" && (
-            <MajelisPicker pengajuanId={pengajuan.id} />
-          )}
-
-          {kode === "TA-03" && pengajuan.status === "selesai" && isPengujiProposal && (
-            <NilaiSemproInput pengajuanId={pengajuan.id} />
-          )}
-
-          {kode === "TA-04" && pengajuan.status === "selesai" && isPengujiKomprehensif && (
-            <NilaiKomprehensifInput pengajuanId={pengajuan.id} />
-          )}
-
-          {kode === "TA-05" && pengajuan.status === "selesai" && isSekretarisSidang && (
-            <NilaiMunaqasyahInput pengajuanId={pengajuan.id} />
           )}
 
           {/* PDF Actions Card */}
