@@ -5,6 +5,14 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { checkLayananEligibility } from "@/lib/eligibility";
+import { FileText, ScrollText, Presentation, BookOpen, GraduationCap, ScanSearch, FileCheck, MapPin, FlaskConical, Briefcase, ThumbsUp, Lock } from "lucide-react";
+
+const LAYANAN_ICONS: Record<string, typeof FileText> = {
+  "TA-01": ScrollText, "TA-02": FileCheck, "TA-03": Presentation,
+  "TA-04": BookOpen, "TA-05": GraduationCap, "TA-06": ScanSearch,
+  "AK-01": FileText, "AK-02": FileText, "AK-03": FileText,
+  "AK-04": MapPin, "AK-05": FlaskConical, "AK-06": Briefcase, "AK-07": ThumbsUp,
+};
 
 export default async function PilihLayananPage() {
   const session = await auth();
@@ -44,16 +52,18 @@ export default async function PilihLayananPage() {
 
   function renderCard(l: (typeof layanan)[number]) {
     const elig = user!.mahasiswa ? (eligibilityMap[l.kode] ?? { eligible: true }) : { eligible: true };
+    const Icon = LAYANAN_ICONS[l.kode] ?? FileText;
 
     if (!elig.eligible) {
       return (
         <div
           key={l.kode}
-          className="rounded-lg border border-dashed p-4 opacity-50 cursor-not-allowed"
+          className="rounded-xl border border-dashed p-4 opacity-50 cursor-not-allowed bg-muted/20"
           title={elig.reason}
         >
           <div className="flex items-center justify-between mb-2">
             <Badge variant="outline">{l.kode}</Badge>
+            <Lock className="h-4 w-4 text-muted-foreground" />
           </div>
           <p className="font-semibold text-sm">{l.nama}</p>
           <p className="text-xs text-muted-foreground mt-1">{elig.reason}</p>
@@ -63,15 +73,16 @@ export default async function PilihLayananPage() {
 
     return (
       <Link key={l.kode} href={`/pengajuan/baru/${l.kode}`}>
-        <Card className="h-full transition-shadow hover:shadow-md">
+        <Card className="h-full group transition-all hover:shadow-lg hover:-translate-y-0.5 cursor-pointer border hover:border-primary/30">
           <CardHeader>
             <div className="flex items-center justify-between">
-              <Badge variant="outline">{l.kode}</Badge>
+              <Badge variant="outline" className="font-mono text-xs">{l.kode}</Badge>
+              <Icon className="h-5 w-5 text-primary/30 group-hover:text-primary/60 transition-colors" />
             </div>
-            <CardTitle className="text-base">{l.nama}</CardTitle>
+            <CardTitle className="text-base group-hover:text-primary transition-colors">{l.nama}</CardTitle>
           </CardHeader>
           <CardContent>
-            <CardDescription>Ajukan {l.nama.toLowerCase()} melalui sistem</CardDescription>
+            <CardDescription>Klik untuk mengajukan {l.nama.toLowerCase()}</CardDescription>
           </CardContent>
         </Card>
       </Link>

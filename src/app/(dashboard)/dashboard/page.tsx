@@ -4,18 +4,20 @@ import { prisma } from "@/lib/prisma";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
-import { FileText, Clock, CheckCircle, Users, AlertCircle, ArrowRight } from "lucide-react";
+import { FileText, Clock, CheckCircle, Users, AlertCircle, ArrowRight, Plus } from "lucide-react";
 import { StatusBadge } from "@/components/pengajuan/StatusBadge";
+import { Button } from "@/components/ui/button";
 
-function StatCard({ label, value, icon: Icon }: { label: string; value: string | number; icon: React.ComponentType<{ className?: string }> }) {
+function StatCard({ label, value, icon: Icon, color }: { label: string; value: string | number; icon: React.ComponentType<{ className?: string }>; color: string }) {
   return (
-    <Card>
+    <Card className="relative overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+      <div className={`absolute top-0 left-0 w-1 h-full ${color}`} />
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle className="text-sm font-medium text-muted-foreground">{label}</CardTitle>
-        <Icon className="h-4 w-4 text-muted-foreground" />
+        <Icon className={`h-4 w-4 ${color.replace("bg-", "text-")}`} />
       </CardHeader>
       <CardContent>
-        <p className="text-2xl font-bold">{value}</p>
+        <p className="text-3xl font-bold tracking-tight">{value}</p>
       </CardContent>
     </Card>
   );
@@ -290,33 +292,69 @@ export default async function DashboardPage() {
   if (baseRole === "kabag") roleBadges.push("Kabag");
   if (baseRole === "super_admin") roleBadges.push("Super Admin");
 
+  const contextMessages: Record<string, string> = {
+    mahasiswa: "Ajukan layanan akademik dan pantau status pengajuan Anda",
+    staff_prodi: "Verifikasi pengajuan tugas akhir di program studi Anda",
+    staff_akademik: "Verifikasi pengajuan akademik yang masuk",
+    kabag: "Approval pengajuan akademik yang memerlukan persetujuan Anda",
+    super_admin: "Pantau seluruh aktivitas pengajuan di sistem",
+    kaprodi: "Approve pengajuan judul tugas akhir di program studi Anda",
+    sekprodi: "Tetapkan pembimbing, penguji, dan jadwal untuk pengajuan",
+    wakil_dekan_1: "Tanda tangani dan approve pengajuan sebagai Wakil Dekan I",
+    dekan: "Tanda tangani pengajuan sebagai Dekan",
+    kepala_lab: "Review pengajuan pengecekan Turnitin",
+    dosen: "Pilih judul tugas akhir dan pantau mahasiswa bimbingan Anda",
+  };
+
+  const contextMessage = [...effectiveRoles].reverse().find(r => contextMessages[r]) ? contextMessages[[...effectiveRoles].reverse().find(r => contextMessages[r])!] : "";
+
+  const STATUS_BORDER: Record<string, string> = {
+    pending_staff_prodi: "border-l-amber-500",
+    pending_pa: "border-l-blue-500",
+    pending_kaprodi: "border-l-purple-500",
+    pending_wd1: "border-l-indigo-500",
+    pending_sekprodi: "border-l-teal-500",
+    pending_dekan: "border-l-indigo-600",
+    pending_staff_akademik: "border-l-amber-500",
+    pending_kabag: "border-l-orange-500",
+    pending_kepala_lab: "border-l-cyan-500",
+    revision_required: "border-l-red-500",
+    selesai: "border-l-green-500",
+    terminated: "border-l-gray-500",
+  };
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Halo, {userName}</h1>
-        <div className="mt-1 flex flex-wrap items-center gap-1.5">
-          {roleBadges.map((label) => (
-            <span
-              key={label}
-              className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium text-muted-foreground"
-            >
-              {label}
-            </span>
-          ))}
-          {effectiveRoles.includes("mahasiswa") && user.mahasiswa?.prodi && (
-            <span className="text-xs text-muted-foreground">· {user.mahasiswa.prodi.nama}</span>
+      <div className="rounded-xl border bg-gradient-to-r from-primary/5 via-primary/3 to-transparent p-5 sm:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+          <div>
+            <p className="text-sm font-medium text-muted-foreground">Selamat datang,</p>
+            <h1 className="text-2xl font-bold tracking-tight">{userName}</h1>
+            <div className="mt-2 flex flex-wrap items-center gap-1.5">
+              {roleBadges.map((label) => (
+                <Badge key={label} variant="secondary" className="text-xs">{label}</Badge>
+              ))}
+              {effectiveRoles.includes("mahasiswa") && user.mahasiswa?.prodi && (
+                <span className="text-xs text-muted-foreground">· {user.mahasiswa.prodi.nama}</span>
+              )}
+            </div>
+            <p className="mt-3 text-sm text-muted-foreground">{contextMessage}</p>
+          </div>
+          {effectiveRoles.includes("mahasiswa") && (
+            <Link href="/pengajuan/baru">
+              <Button size="sm"><Plus className="mr-1.5 h-4 w-4" />Ajukan Layanan</Button>
+            </Link>
           )}
         </div>
       </div>
 
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
-        <StatCard label={stat1.label} value={stat1.value} icon={FileText} />
-        <StatCard label={stat2.label} value={stat2.value} icon={Clock} />
-        <StatCard label={stat3.label} value={stat3.value} icon={CheckCircle} />
-        <StatCard label={stat4.label} value={stat4.value} icon={Users} />
+        <StatCard label={stat1.label} value={stat1.value} icon={FileText} color="bg-blue-500" />
+        <StatCard label={stat2.label} value={stat2.value} icon={Clock} color="bg-amber-500" />
+        <StatCard label={stat3.label} value={stat3.value} icon={CheckCircle} color="bg-green-500" />
+        <StatCard label={stat4.label} value={stat4.value} icon={Users} color="bg-purple-500" />
       </div>
 
-      {/* Perlu Tindakan — hanya untuk mahasiswa yang punya revisi */}
       {revisiTasks.length > 0 && (
         <div>
           <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold text-destructive">
@@ -326,7 +364,7 @@ export default async function DashboardPage() {
           <div className="space-y-2">
             {revisiTasks.map((t) => (
               <Link key={t.id} href={`/pengajuan/${t.id}`}>
-                <Card className="border-destructive/30 bg-destructive/5 transition-shadow hover:shadow-md">
+                <Card className={`border-l-4 ${STATUS_BORDER[t.status] ?? "border-l-muted"} border-destructive/30 bg-destructive/5 transition-shadow hover:shadow-md`}>
                   <CardHeader className="py-3">
                     <div className="flex items-center justify-between gap-4">
                       <div className="min-w-0 flex-1">
@@ -360,7 +398,7 @@ export default async function DashboardPage() {
           <div className="space-y-2">
             {tasks.map((t) => (
               <Link key={t.id} href={`/pengajuan/${t.id}`}>
-                <Card className="transition-shadow hover:shadow-md">
+                <Card className={`border-l-4 ${STATUS_BORDER[t.status] ?? "border-l-muted"} transition-shadow hover:shadow-md`}>
                   <CardHeader className="py-3">
                     <div className="flex items-center justify-between gap-4">
                       <div className="min-w-0 flex-1">
@@ -387,15 +425,22 @@ export default async function DashboardPage() {
       )}
 
       {tasks.length === 0 && revisiTasks.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-16 text-center">
-          <FileText className="mb-4 h-12 w-12 text-muted-foreground" />
+        <Card className="flex flex-col items-center justify-center py-16 text-center border-dashed">
+          <div className="rounded-full bg-muted p-4 mb-4">
+            <FileText className="h-8 w-8 text-muted-foreground" />
+          </div>
           <h3 className="text-lg font-semibold">Belum ada pengajuan</h3>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="mt-1 text-sm text-muted-foreground max-w-sm">
             {effectiveRoles.includes("mahasiswa")
               ? "Ajukan layanan akademik melalui menu Pengajuan."
               : "Belum ada pengajuan yang memerlukan tindakan Anda."}
           </p>
-        </div>
+          {effectiveRoles.includes("mahasiswa") && (
+            <Link href="/pengajuan/baru" className="mt-4">
+              <Button size="sm"><Plus className="mr-1.5 h-4 w-4" />Ajukan Layanan</Button>
+            </Link>
+          )}
+        </Card>
       )}
     </div>
   );

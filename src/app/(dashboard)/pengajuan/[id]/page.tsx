@@ -17,6 +17,8 @@ import { NilaiKomprehensifInput } from "@/components/workflow/NilaiKomprehensifI
 import { NilaiMunaqasyahInput } from "@/components/workflow/NilaiMunaqasyahInput";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 
 export default async function PengajuanDetailPage({
   params,
@@ -113,23 +115,27 @@ export default async function PengajuanDetailPage({
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2">
-        <Link href="/pengajuan"><Button variant="outline" size="sm">Kembali</Button></Link>
+        <Link href="/pengajuan"><Button variant="ghost" size="sm">← Kembali</Button></Link>
       </div>
 
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-        <div className="min-w-0">
-          <h1 className="text-2xl font-bold truncate">{pengajuan.jenis_layanan.nama}</h1>
-          <p className="text-muted-foreground">
-            {pengajuan.kode_pengajuan} · Diajukan {new Date(pengajuan.created_at).toLocaleDateString("id-ID")}
-          </p>
-        </div>
-        <StatusBadge status={pengajuan.status} />
-      </div>
-
-      <div className="flex items-center gap-2">
-        <span className="text-sm text-muted-foreground">Progress:</span>
-        <ProgressBar workflowDefinitionId={pengajuan.workflow_definition_id} currentStepCode={pengajuan.current_step_code} />
-      </div>
+      {/* Header Card */}
+      <Card className="shadow-sm rounded-xl">
+        <CardContent className="pt-5">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
+            <div className="min-w-0">
+              <Badge variant="outline" className="mb-2 font-mono text-xs">{pengajuan.jenis_layanan.kode}</Badge>
+              <h1 className="text-xl font-bold">{pengajuan.jenis_layanan.nama}</h1>
+              <p className="text-muted-foreground text-sm mt-1">
+                {pengajuan.kode_pengajuan} · Diajukan {new Date(pengajuan.created_at).toLocaleDateString("id-ID")}
+              </p>
+            </div>
+            <StatusBadge status={pengajuan.status} />
+          </div>
+          <div className="pt-3 border-t">
+            <ProgressBar workflowDefinitionId={pengajuan.workflow_definition_id} currentStepCode={pengajuan.current_step_code} />
+          </div>
+        </CardContent>
+      </Card>
 
       {versions.length > 1 && (
         <div className="flex items-center gap-2 text-sm flex-wrap">
@@ -158,8 +164,9 @@ export default async function PengajuanDetailPage({
         </div>
       )}
 
-      <div className="rounded-lg border p-4">
-        <h3 className="mb-3 font-semibold">Data Pengajuan</h3>
+      <Card className="shadow-sm rounded-xl">
+        <CardContent className="pt-5">
+          <h3 className="mb-3 font-semibold text-sm uppercase tracking-wide text-muted-foreground">Data Pengajuan</h3>
         {activeSnapshot && (
           <div className="rounded-lg border border-dashed bg-muted/30 p-4 mb-4">
             <p className="text-xs font-medium text-muted-foreground mb-2">
@@ -200,17 +207,21 @@ export default async function PengajuanDetailPage({
             )}
           </div>
         )}
-      </div>
+      </CardContent>
+      </Card>
 
-      <div className="rounded-lg border p-4">
-        <h3 className="mb-3 font-semibold">Riwayat Aktivitas</h3>
-        <ActivityTimeline pengajuanId={pengajuan.id} />
-      </div>
+      <Card className="shadow-sm rounded-xl">
+        <CardContent className="pt-5">
+          <h3 className="mb-3 font-semibold text-sm uppercase tracking-wide text-muted-foreground">Riwayat Aktivitas</h3>
+          <ActivityTimeline pengajuanId={pengajuan.id} />
+        </CardContent>
+      </Card>
 
       {pengajuan.pengajuan_dokumen.length > 0 && (
-        <div className="rounded-lg border p-4">
-          <h3 className="mb-3 font-semibold">Dokumen ({pengajuan.pengajuan_dokumen.length})</h3>
-          <div className="space-y-2">
+        <Card className="shadow-sm rounded-xl">
+          <CardContent className="pt-5">
+            <h3 className="mb-3 font-semibold text-sm uppercase tracking-wide text-muted-foreground">Dokumen ({pengajuan.pengajuan_dokumen.length})</h3>
+            <div className="space-y-2">
             {pengajuan.pengajuan_dokumen.map((dok) => (
               <div key={dok.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between rounded-md border p-3 gap-2">
                 <div className="flex flex-wrap items-center gap-2 text-sm min-w-0">
@@ -233,7 +244,8 @@ export default async function PengajuanDetailPage({
               </div>
             ))}
           </div>
-        </div>
+        </CardContent>
+      </Card>
       )}
 
       {currentStep && currentStep.actions.length > 0 && (

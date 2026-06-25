@@ -18,7 +18,7 @@ export default async function DashboardLayout({
 
   const user = await prisma.user.findUnique({
     where: { id: Number(session.user.id) },
-    include: { dosen: true, mahasiswa: true, pegawai: true },
+    include: { dosen: true, mahasiswa: { include: { prodi: true } }, pegawai: true },
   });
   if (!user) redirect("/login");
 
@@ -27,6 +27,30 @@ export default async function DashboardLayout({
     user.pegawai?.nama_lengkap ||
     user.mahasiswa?.nama_lengkap ||
     user.email;
+
+  // Determine role label and prodi for Header
+  const ROLE_LABELS: Record<string, string> = {
+    mahasiswa: "Mahasiswa", dosen: "Dosen", staff_prodi: "Staff Prodi",
+    staff_akademik: "Staff Akademik", kabag: "Kabag", super_admin: "Super Admin",
+  };
+  let roleLabel = ROLE_LABELS[user.system_role] ?? user.system_role;
+  let prodiName = user.mahasiswa?.prodi?.nama ?? "";
+
+  if (user.dosen?.id) {
+    const pos = await prisma.structuralPosition.findFirst({
+      where: { dosen_id: user.dosen.id, is_active: true },
+      include: { prodi: { select: { nama: true } } },
+      orderBy: { start_date: "desc" },
+    });
+    if (pos) {
+      const POS_LABELS: Record<string, string> = {
+        kaprodi: "Kaprodi", sekprodi: "Sekprodi", wakil_dekan_1: "Wakil Dekan I",
+        dekan: "Dekan", kepala_lab: "Kepala Lab",
+      };
+      roleLabel = POS_LABELS[pos.position_code] ?? pos.position_code;
+      prodiName = pos.prodi?.nama ?? "";
+    }
+  }
 
   const cookieStore = await cookies();
   const cookieVal = cookieStore.get("selected_semester_id")?.value;
@@ -64,6 +88,8 @@ export default async function DashboardLayout({
       <main className="flex flex-1 flex-col min-h-screen w-full min-w-0">
         <Header
           userName={userName}
+          roleLabel={roleLabel}
+          prodiName={prodiName || undefined}
           slot={
             <SemesterSelector
               semesters={semesterOptions}

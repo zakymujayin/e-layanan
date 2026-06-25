@@ -17,6 +17,7 @@ import {
 import { toast } from "sonner";
 import { executeWorkflowAction } from "@/lib/workflow/execute-action";
 import type { WorkflowStepAction } from "@/generated/prisma/client";
+import { CheckCircle, XCircle, CornerUpLeft, Pen, AlertTriangle, Loader2 } from "lucide-react";
 
 const STATUS_LABELS: Record<string, string> = {
   submitted: "Mahasiswa (awal)",
@@ -29,6 +30,22 @@ const STATUS_LABELS: Record<string, string> = {
   pending_wd1: "Wakil Dekan 1",
   pending_dekan: "Dekan",
   pending_kepala_lab: "Kepala Lab",
+};
+
+const ACTION_CONFIG: Record<string, { icon: typeof CheckCircle; variant: "default" | "destructive" | "outline"; label: string }> = {
+  approve: { icon: CheckCircle, variant: "default", label: "Setujui" },
+  sign: { icon: Pen, variant: "default", label: "Tanda Tangan" },
+  select_judul: { icon: CheckCircle, variant: "default", label: "Pilih Judul" },
+  reject_to_submitter: { icon: XCircle, variant: "destructive", label: "Kembalikan ke Mahasiswa" },
+  reject_to_step: { icon: CornerUpLeft, variant: "destructive", label: "Kembalikan" },
+};
+
+const DIALOG_MESSAGES: Record<string, { title: string; desc: string }> = {
+  approve: { title: "Setujui Pengajuan", desc: "Pengajuan akan dilanjutkan ke tahap berikutnya." },
+  sign: { title: "Tanda Tangan Dokumen", desc: "Dokumen final akan diterbitkan dengan tanda tangan Anda. Pastikan data sudah benar." },
+  select_judul: { title: "Pilih Judul Skripsi", desc: "Judul yang dipilih akan menjadi judul skripsi resmi mahasiswa." },
+  reject_to_submitter: { title: "Kembalikan ke Mahasiswa", desc: "Mahasiswa akan diminta merevisi dan mengirim ulang pengajuan." },
+  reject_to_step: { title: "Kembalikan ke Tahap Sebelumnya", desc: "Pengajuan akan dikirim kembali ke tahap yang dipilih untuk diperiksa ulang." },
 };
 
 interface ActionButtonsProps {
@@ -67,10 +84,6 @@ export function ActionButtons({ pengajuanId, actions, isPA, judulCount }: Action
     }
   }
 
-  function handleActionClick(actionCode: string) {
-    setConfirmAction(actionCode);
-  }
-
   function confirmAndExecute() {
     if (confirmAction) {
       execute(confirmAction);
@@ -78,45 +91,61 @@ export function ActionButtons({ pengajuanId, actions, isPA, judulCount }: Action
     }
   }
 
-  return (
-    <div className="space-y-4 rounded-lg border p-4">
-      <h3 className="font-semibold">Aksi</h3>
+  const confirmDialog = confirmAction ? (DIALOG_MESSAGES[confirmAction] ?? { title: "Konfirmasi Aksi", desc: "Apakah Anda yakin ingin melanjutkan?" }) : null;
 
+  return (
+    <div className="space-y-4 rounded-xl border bg-card p-5 shadow-sm">
+      <h3 className="font-semibold text-lg">Aksi</h3>
+
+      {/* PA Judul Selection */}
       {isPA && actions.some(a => a.action_code === "select_judul") && (
-        <div className="space-y-2">
-          <Label>Pilih 1 Judul:</Label>
-          {Array.from({ length: judulCount }, (_, i) => (
-            <label key={i} className="flex items-center gap-2">
-              <input
-                type="radio"
-                name="selected_judul"
-                value={i + 1}
-                checked={selectedJudul === i + 1}
-                onChange={() => setSelectedJudul(i + 1)}
-              />
-              Judul {i + 1}
-            </label>
-          ))}
+        <div className="space-y-2 rounded-lg border bg-muted/30 p-4">
+          <Label className="text-sm font-medium">Pilih 1 Judul Skripsi:</Label>
+          <div className="space-y-2">
+            {Array.from({ length: judulCount }, (_, i) => (
+              <label
+                key={i}
+                className={`flex items-center gap-3 rounded-lg border p-3 cursor-pointer transition-all
+                  ${selectedJudul === i + 1
+                    ? "border-primary bg-primary/5 ring-1 ring-primary"
+                    : "bg-background hover:border-primary/40 hover:bg-muted/50"
+                  }`}
+              >
+                <input
+                  type="radio"
+                  name="selected_judul"
+                  value={i + 1}
+                  checked={selectedJudul === i + 1}
+                  onChange={() => setSelectedJudul(i + 1)}
+                  className="accent-primary h-4 w-4 shrink-0"
+                />
+                <span className="text-sm">Judul {i + 1}</span>
+              </label>
+            ))}
+          </div>
         </div>
       )}
 
+      {/* Action Buttons */}
       <div className="flex flex-col gap-3">
         {actions.map(a => {
-          const isDestructive = ["reject_to_submitter", "reject_to_step"].includes(a.action_code);
-          const needsReason = a.requires_reason || isDestructive;
+          const cfg = ACTION_CONFIG[a.action_code] ?? { icon: CheckCircle, variant: "default" as const, label: a.label };
+          const needsReason = a.requires_reason || a.action_code === "reject_to_submitter" || a.action_code === "reject_to_step";
           const actionConfig = a.actionConfig as { allow_target?: string[] } | null;
           const allowTarget = actionConfig?.allow_target ?? [];
           const needsTarget = a.action_code === "reject_to_step" && allowTarget.length > 0;
+          const isCurrentLoading = loading === a.action_code;
 
           return (
             <div key={a.id} className="flex flex-col gap-2">
+              {/* Target dropdown for reject_to_step */}
               {needsTarget && (
                 <div>
-                  <Label className="text-xs mb-1 block">Kembalikan ke:</Label>
+                  <Label className="text-xs font-medium mb-1 block">Kembalikan ke:</Label>
                   <select
                     value={targetStatus}
                     onChange={e => setTargetStatus(e.target.value)}
-                    className="rounded-md border border-input bg-background px-2 py-1.5 text-sm shadow-sm"
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
                   >
                     <option value="">Pilih tujuan pengembalian...</option>
                     {allowTarget.map(t => (
@@ -125,26 +154,35 @@ export function ActionButtons({ pengajuanId, actions, isPA, judulCount }: Action
                   </select>
                 </div>
               )}
-              <div className="flex items-center gap-2">
+
+              {/* Alasan input + button row */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                 {needsReason && (
                   <input
                     type="text"
-                    placeholder="Alasan penolakan (wajib)..."
+                    placeholder="Alasan (wajib)..."
                     value={alasan}
                     onChange={e => setAlasan(e.target.value)}
-                    className="rounded-md border border-input bg-background px-2 py-1.5 text-sm shadow-sm min-w-[220px]"
+                    className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring min-w-0"
                   />
                 )}
                 <Button
-                  variant={isDestructive ? "destructive" : "default"}
+                  variant={cfg.variant}
+                  size={needsReason ? "default" : "lg"}
                   disabled={
                     loading !== null ||
                     (needsReason && !alasan.trim()) ||
                     (needsTarget && !targetStatus)
                   }
-                  onClick={() => isDestructive ? handleActionClick(a.action_code) : execute(a.action_code)}
+                  onClick={() => setConfirmAction(a.action_code)}
+                  className="gap-2 shrink-0 w-full sm:w-auto"
                 >
-                  {loading === a.action_code ? "Memproses..." : a.label}
+                  {isCurrentLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <cfg.icon className="h-4 w-4" />
+                  )}
+                  {isCurrentLoading ? "Memproses..." : cfg.label}
                 </Button>
               </div>
             </div>
@@ -152,17 +190,23 @@ export function ActionButtons({ pengajuanId, actions, isPA, judulCount }: Action
         })}
       </div>
 
+      {/* AlertDialog — all actions require confirmation */}
       <AlertDialog open={confirmAction !== null} onOpenChange={() => setConfirmAction(null)}>
-        <AlertDialogContent>
+        <AlertDialogContent className="max-w-sm">
           <AlertDialogHeader>
-            <AlertDialogTitle>Konfirmasi Aksi</AlertDialogTitle>
-            <AlertDialogDescription>
-              Apakah Anda yakin ingin melakukan aksi ini? Tindakan ini tidak dapat dibatalkan.
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 mb-2">
+              <AlertTriangle className="h-6 w-6 text-primary" />
+            </div>
+            <AlertDialogTitle className="text-center">{confirmDialog?.title}</AlertDialogTitle>
+            <AlertDialogDescription className="text-center">
+              {confirmDialog?.desc}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Batal</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmAndExecute}>Ya, Lanjutkan</AlertDialogAction>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+            <AlertDialogCancel className="w-full sm:w-auto">Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmAndExecute} className="w-full sm:w-auto">
+              Ya, Lanjutkan
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
