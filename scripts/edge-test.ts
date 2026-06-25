@@ -276,7 +276,7 @@ export async function runEdgeTests() {
     const positions = await prisma.structuralPosition.findMany({
       where: { is_active: true },
     });
-    const expectedRoles = ["kaprodi", "sekprodi", "wakil_dekan_1", "dekan", "kepala_lab", "kabag_tu"];
+    const expectedRoles = ["kaprodi", "sekprodi", "wakil_dekan_1", "dekan", "kepala_lab"];
     for (const role of expectedRoles) {
       if (!positions.find((p) => p.position_code === role)) {
         throw new Error(`Missing active position: ${role}`);

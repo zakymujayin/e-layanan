@@ -169,12 +169,18 @@ export async function assignStructuralPosition(formData: FormData) {
   await requireAdmin();
 
   const positionCode = formData.get("position_code") as string;
-  const dosenId = Number(formData.get("dosen_id"));
+  const dosenIdRaw = formData.get("dosen_id") as string | null;
+  const pegawaiIdRaw = formData.get("pegawai_id") as string | null;
   const prodiIdRaw = formData.get("prodi_id") as string | null;
+  const dosenId = dosenIdRaw ? Number(dosenIdRaw) : null;
+  const pegawaiId = pegawaiIdRaw ? Number(pegawaiIdRaw) : null;
   const prodiId = prodiIdRaw ? Number(prodiIdRaw) : null;
 
-  if (!positionCode || !dosenId) {
-    throw new Error("ERR_VAL_REQUIRED_FIELD: position_code dan dosen_id wajib diisi");
+  if (!positionCode) {
+    throw new Error("ERR_VAL_REQUIRED_FIELD: position_code wajib diisi");
+  }
+  if (!dosenId && !pegawaiId) {
+    throw new Error("ERR_VAL_REQUIRED_FIELD: dosen_id atau pegawai_id wajib diisi");
   }
 
   await prisma.structuralPosition.updateMany({
@@ -186,6 +192,7 @@ export async function assignStructuralPosition(formData: FormData) {
     data: {
       position_code: positionCode as any,
       dosen_id: dosenId,
+      pegawai_id: pegawaiId,
       prodi_id: prodiId,
       is_active: true,
       start_date: new Date(),
