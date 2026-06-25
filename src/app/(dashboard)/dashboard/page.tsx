@@ -361,12 +361,12 @@ export default async function DashboardPage() {
             <AlertCircle className="h-5 w-5" />
             Perlu Tindakan Anda ({revisiTasks.length})
           </h2>
-          <div className="space-y-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {revisiTasks.map((t) => (
               <Link key={t.id} href={`/pengajuan/${t.id}`}>
-                <Card className={`border-l-4 ${STATUS_BORDER[t.status] ?? "border-l-muted"} border-destructive/30 bg-destructive/5 transition-shadow hover:shadow-md`}>
-                  <CardHeader className="py-3">
-                    <div className="flex items-center justify-between gap-4">
+                <Card className={`h-full border-l-4 ${STATUS_BORDER[t.status] ?? "border-l-muted"} border-destructive/30 bg-destructive/5 transition-shadow hover:shadow-md`}>
+                  <CardHeader className="p-4">
+                    <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
                         <CardTitle className="text-sm">
                           {t.kode_pengajuan} · {t.jenis_layanan?.nama}
@@ -395,11 +395,11 @@ export default async function DashboardPage() {
       {tasks.length > 0 && (
         <div>
           <h2 className="mb-3 text-lg font-semibold">{taskTitle}</h2>
-          <div className="space-y-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {tasks.map((t) => (
               <Link key={t.id} href={`/pengajuan/${t.id}`}>
-                <Card className={`border-l-4 ${STATUS_BORDER[t.status] ?? "border-l-muted"} transition-shadow hover:shadow-md`}>
-                  <CardHeader className="py-3">
+                <Card className={`h-full border-l-4 ${STATUS_BORDER[t.status] ?? "border-l-muted"} transition-shadow hover:shadow-md`}>
+                  <CardHeader className="p-4">
                     <div className="flex items-center justify-between gap-4">
                       <div className="min-w-0 flex-1">
                         <CardTitle className="text-sm truncate">

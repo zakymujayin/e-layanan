@@ -223,15 +223,16 @@ export default async function PengajuanListPage({ searchParams }: PageProps) {
           )}
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-3">
           {pengajuanList.map((p) => {
             const border = STATUS_BORDER[p.status] ?? "border-l-muted";
             return (
               <Link key={p.id} href={`/pengajuan/${p.id}`}>
                 <Card className={`group border-l-4 ${border} cursor-pointer transition-all hover:shadow-md hover:bg-muted/30`}>
-                  <CardHeader className="py-3">
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="min-w-0 flex-1">
+                  <CardHeader className="p-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+                      {/* LEFT: Main info */}
+                      <div className="flex-1 min-w-0 space-y-0.5">
                         <div className="flex items-center gap-2">
                           <Badge variant="outline" className="shrink-0 text-xs font-mono">
                             {p.jenis_layanan?.kode}
@@ -241,17 +242,23 @@ export default async function PengajuanListPage({ searchParams }: PageProps) {
                           </CardTitle>
                         </div>
                         {!isMahasiswa && p.mahasiswa && (
-                          <p className="mt-0.5 text-xs text-muted-foreground font-medium">
+                          <p className="text-xs text-muted-foreground font-medium leading-relaxed">
                             {p.mahasiswa.nama_lengkap} · {p.mahasiswa.nim}
                           </p>
                         )}
-                        <p className="mt-0.5 text-xs text-muted-foreground">
-                          {p.kode_pengajuan} · {format(p.updated_at, "d MMM yyyy, HH:mm", { locale: idLocale })}
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                          {p.kode_pengajuan}
                         </p>
                       </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <StatusBadge status={p.status} />
-                        <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:translate-x-0.5 transition-transform" />
+                      {/* RIGHT: Meta info */}
+                      <div className="flex flex-row sm:flex-col items-center sm:items-end gap-2 sm:gap-1 shrink-0">
+                        <span className="text-xs text-muted-foreground">
+                          {format(p.updated_at, "d MMM yyyy", { locale: idLocale })}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <StatusBadge status={p.status} />
+                          <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:translate-x-0.5 transition-transform" />
+                        </div>
                       </div>
                     </div>
                   </CardHeader>

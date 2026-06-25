@@ -221,7 +221,7 @@ export default async function PengajuanDetailPage({
         <Card className="shadow-sm rounded-xl">
           <CardContent className="pt-5">
             <h3 className="mb-3 font-semibold text-sm uppercase tracking-wide text-muted-foreground">Dokumen ({pengajuan.pengajuan_dokumen.length})</h3>
-            <div className="space-y-2">
+            <div className="space-y-3">
             {pengajuan.pengajuan_dokumen.map((dok) => (
               <div key={dok.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between rounded-md border p-3 gap-2">
                 <div className="flex flex-wrap items-center gap-2 text-sm min-w-0">
